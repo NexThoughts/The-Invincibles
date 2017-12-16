@@ -22,4 +22,5 @@ dependencies {
     compile 'io.vertx:vertx-auth-jdbc:3.5.0'
 
     compile group: 'mysql', name: 'mysql-connector-java', version: '5.1.13'
+    compile 'com.google.code.gson:gson:2.8.1'
 }
