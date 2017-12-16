@@ -382,10 +382,11 @@ class BasicCrud extends AbstractVerticle {
     }
 
 
+    // pass -> name, username, password, designation, isActive, canAssign, role
     boolean createUser(UserBO userBO) {
         SQLConnection conn = context.get("conn")
         String queryy = "select * from USER where username = '${userBO.username}'"
-        conn.queryWithParams(queryy, new JsonArray().add(taskId), { query ->
+        conn.queryWithParams(queryy, new JsonArray(), { query ->
             if (query.failed()) {
                 println query.cause()
                 sendError(500, response)
@@ -405,14 +406,21 @@ class BasicCrud extends AbstractVerticle {
                                 if (query2.failed()) {
                                     return false
                                 } else {
-                                    return true
+                                    conn.updateWithParams("INSERT INTO USER_ROLE (role_id) VALUES (?)",
+                                            new JsonArray()
+                                                    .add(userBO.role.equals('user') ? 1 : 2),
+                                            { query3 ->
+                                                if (query3.failed()) {
+                                                    return false
+                                                } else {
+                                                    return true
+                                                }
+                                            })
                                 }
                             })
                 }
             }
         })
-
-
     }
 
     void createProject(ProjectBO projectBO) {
@@ -474,9 +482,24 @@ class BasicCrud extends AbstractVerticle {
     }
 
     void createProjects() {
-        1.times { num ->
-//            conn.updateWithParams('insert into PROJECT values')
-        }
+
+        String queryy = "select * from PROJECT"
+        conn.queryWithParams(queryy, new JsonArray(), { query ->
+            if (query.failed()) {
+                println query.cause()
+                sendError(500, response)
+            } else {
+                if (query.result().getNumRows() == 0) {
+                    3.each {
+                        ProjectBO projectBO = new ProjectBO()
+                        projectBO.name = "Project${it}"
+                        projectBO.createdBy = "${it}"
+                        projectBO.dateCreated = new Date()
+                        createProject(projectBO)
+                    }
+                }
+            }
+        })
     }
 
     void createRoles() {

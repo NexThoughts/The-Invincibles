@@ -18,4 +18,8 @@ class ProjectBO {
         dateCreated = jsonArray[2]
         createdBy = jsonArray[3]
     }
+
+    ProjectBO() {
+
+    }
 }
