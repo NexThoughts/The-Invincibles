@@ -4,6 +4,7 @@ import com.bo.ProjectBO
 import com.bo.TaskBO
 import com.bo.UserBO
 import com.bo.UserProjectBO
+import com.todo.mail.SendEmail
 import com.util.AppUtil
 import com.util.SqlUtil
 import io.vertx.core.AbstractVerticle
@@ -241,7 +242,7 @@ class BasicCrud extends AbstractVerticle {
             engine.render(context, "templates/user/signup.ftl", { res ->
                 response.putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end("Password and confirm Password should be match")
             })
-        } else if (userBO.username) {
+        } else {
             println("========= IN USERNAME VALIDATION")
             String queryStr = "SELECT * FROM USER where username = ?"
             conn.queryWithParams(queryStr, new JsonArray().add(userBO.username), { query ->
@@ -251,15 +252,22 @@ class BasicCrud extends AbstractVerticle {
                         response.putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end("Something went wrong")
                     })
                 } else {
-                    if (query.result().getNumRows() == 1) {
+                    if (query.result().getNumRows() > 0) {
                         engine.render(context, "templates/user/signup.ftl", { res ->
                             response.putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end("USER already Exists")
                         })
                     } else {
                         userBO.role = "admin"
                         if (createNewUser(userBO)) {
+                            println("======= USER CREATED =======")
+                            SendEmail.triggerNow(userBO.username, "Welcome Mail", "Hi ${userBO.name ?: ''},Thanks For Signup with us. ", vertx)
                             engine.render(context, "templates/dashProfile.ftl", { res ->
-                                response.putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end()
+                                response.putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end(res.result())
+                            })
+                        } else {
+                            println("======= HAPPENDED WRONG =======")
+                            engine.render(context, "templates/user/signup.ftl", { res ->
+                                response.putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end("Something went wrong")
                             })
                         }
                     }
@@ -454,8 +462,10 @@ class BasicCrud extends AbstractVerticle {
                 sendError(500, response)
             } else {
                 if (query.result().getNumRows() > 0) {
+                    println("======= USER FOUND ======")
                     'USER already exists'
                 } else {
+                    println("======= GOING TO SAVE USER ======")
                     auth.setNonces(new JsonArray().add("random_hash_1").add("random_hash_1"));
                     String salt = auth.generateSalt();
                     String hash = auth.computeHash(userBO.password, salt);
@@ -470,15 +480,19 @@ class BasicCrud extends AbstractVerticle {
                                     .add(salt),
                             { query2 ->
                                 if (query2.failed()) {
+                                    println("======= QUERY FAILED ---- ${query2.cause()} ======")
                                     return false
                                 } else {
+                                    println("=======  SAVED USER ======")
                                     conn.updateWithParams("INSERT INTO USER_ROLE (role_id) VALUES (?)",
                                             new JsonArray()
                                                     .add(AppUtil.getRoleId(userBO.role)),
                                             { query3 ->
                                                 if (query3.failed()) {
+                                                    println("======= QUERY FAILED ---- ${query3.cause()} ======")
                                                     return false
                                                 } else {
+                                                    println("======= QUERY SUCCESS ---- ${query3.cause()} ======")
                                                     return true
                                                 }
                                             })
@@ -651,7 +665,7 @@ class BasicCrud extends AbstractVerticle {
             if (query0.failed()) {
                 println query0.cause()
             } else {
-                Integer role_id = query0.result().results.first().getAt(0) as Integer
+                Integer role_id = query0.result().results[0].getAt(0) as Integer
                 admins.eachWithIndex { username, index ->
                     conn.queryWithParams(queryStr, new JsonArray().add(username), { query ->
                         if (query.failed()) {
