@@ -1,9 +1,10 @@
 package com.todo
 
 import com.bo.ProjectBO
+import com.bo.TaskBO
 import com.bo.UserBO
 import com.bo.UserProjectBO
-import com.todo.mail.SendEmail
+import com.util.AppUtil
 import com.util.SqlUtil
 import io.vertx.core.AbstractVerticle
 import io.vertx.core.http.HttpHeaders
@@ -74,7 +75,7 @@ class BasicCrud extends AbstractVerticle {
     }
 
     void showForm(RoutingContext ctx) {
-        SendEmail.triggerNow("anubhav@fintechlabs.in", "Test First", "Hello welcome to using vertx", vertx)
+//        SendEmail.triggerNow("anubhav@fintechlabs.in", "Test First", "Hello welcome to using vertx", vertx)
     }
 
     void login(RoutingContext ctx) {
@@ -128,7 +129,8 @@ class BasicCrud extends AbstractVerticle {
 
     void loginAuth(RoutingContext ctx) {
         SQLConnection connection = ctx.get("conn")
-        JsonObject authInfo = new JsonObject().put("username", "${ctx.request().getFormAttribute("emailId")}").put("password", "${ctx.request().getFormAttribute("password")}");
+        String userName = ctx.request().getFormAttribute("username")
+        JsonObject authInfo = new JsonObject().put("username", "${userName}").put("password", "${ctx.request().getFormAttribute("password")}");
         JDBCAuth authProvider = JDBCAuth.create(vertx, client);
         authProvider.authenticate(authInfo, { res ->
             if (res.succeeded()) {
@@ -137,13 +139,13 @@ class BasicCrud extends AbstractVerticle {
 //                router.route().handler(CookieHandler.create());
                 router.route().handler(SessionHandler.create(LocalSessionStore.create(vertx)));
 
-                engine.render(ctx, "templates/successLogin.ftl", { res1 ->
+                engine.render(ctx, "templates/dashProfile.ftl", { res1 ->
                     ctx.response().putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end(res1.result())
                 })
             } else {
                 println("error----${res}-----------")
                 ctx.put("errorMessage", "${res.cause()?.toString()}")
-                ctx.response().putHeader("location", "/").setStatusCode(302).end();
+                ctx.response().putHeader("location", "/").setStatusCode(302).end(res.cause()?.toString());
             }
         });
     }
@@ -172,7 +174,6 @@ class BasicCrud extends AbstractVerticle {
                                 auth.setNonces(new JsonArray().add("random_hash_1").add("random_hash_1"));
                                 String salt = auth.generateSalt();
                                 String hash = auth.computeHash("123456", salt);
-// save to the database
                                 conn.updateWithParams("INSERT INTO USER VALUES (?, ?, ?)", new JsonArray().add(it).add(hash).add(salt), { res1 ->
                                     if (res1.succeeded()) {
                                         // success!
@@ -193,13 +194,6 @@ class BasicCrud extends AbstractVerticle {
 
     void logOut(RoutingContext context) {
         final Session session = context.session()
-        /*
-        session.remove("login");
-        session.remove("userId");
-        String accessToken=session.get("accessToken");
-        if (accessToken != null) {
-            context.vertx().sharedData().getLocalMap("access_tokens").remove(accessToken);
-        }*/
         context.response().putHeader("location", "/").setStatusCode(302).end();
     }
 
@@ -241,7 +235,7 @@ class BasicCrud extends AbstractVerticle {
 
     void fetchUserListWithRole(RoutingContext ctx) {
 
-        println("---------- Testing called---------")
+        println("---------- Query called---------")
         SQLConnection conn = ctx.get("conn")
         conn.queryWithParams(SqlUtil.queryUserListWithRole(), new JsonArray(), { query ->
             if (query.failed()) {
@@ -268,7 +262,7 @@ class BasicCrud extends AbstractVerticle {
 
     void fetchProjectList(RoutingContext ctx) {
 
-        println("---------- Testing called---------")
+        println("---------- Query called---------")
         String queryy = "select p.id, name, dateCreated, createdBy from PROJECT p "
         conn.queryWithParams(queryy, new JsonArray(), { query ->
             if (query.failed()) {
@@ -301,7 +295,7 @@ class BasicCrud extends AbstractVerticle {
 
     void fetchUserListForProject(RoutingContext ctx, Integer projectId) {
 
-        println("---------- Testing called---------")
+        println("---------- Query called---------")
         SQLConnection conn = ctx.get("conn")
         String queryy = "select u.id, u.username, u.name, p.name, p.id from USER u " +
                 "inner join USER_PROJECT up on u.id = up.user_id inner join PROJECT p " +
@@ -331,9 +325,10 @@ class BasicCrud extends AbstractVerticle {
 
     void fetchTaskListForProject(RoutingContext ctx, Integer projectId) {
 
-        println("---------- Testing called---------")
+        println("---------- Query called---------")
         SQLConnection conn = ctx.get("conn")
-        String queryy = "select "
+        String queryy = "select t.id, t.name, t.description, t.status, isActive, dueDate, p.id from TASK t " +
+                " inner join PROJECT p on p.id = t.project_id where p.id = ?"
         conn.queryWithParams(queryy, new JsonArray().add(projectId), { query ->
             if (query.failed()) {
                 println query.cause()
@@ -343,20 +338,19 @@ class BasicCrud extends AbstractVerticle {
                     String json = query.result().results.toString()
                     println json
                     JsonArray array = new JsonArray()
-                    ArrayList<UserProjectBO> userList = []
+                    ArrayList<TaskBO> taskList = []
                     query.result().results.each {
-                        UserProjectBO bo = new UserProjectBO(it)
-                        userList.add(bo)
+                        TaskBO bo = new TaskBO(it)
+                        taskList.add(bo)
                     }
                     println array
-                    userList.each {
-                        println it.userName
+                    taskList.each {
+                        println it.name
                     }
                 } else println 'no records found'
             }
         })
     }
-
 
     void getProjects(RoutingContext ctx) {
 
@@ -377,6 +371,131 @@ class BasicCrud extends AbstractVerticle {
         return joiner.toString()
     }
 
+
+    void fetchLabelListForTask(RoutingContext ctx, Integer taskId) {
+
+        println("---------- Query called---------")
+        SQLConnection conn = ctx.get("conn")
+        String queryy = "select labelName, task_id, dateCreated, user_id, u.name, u.username, t.name from TASK_LABEL tl inner join TASK t " +
+                "on t.id = tl.task_id inner join USER u on u.id = tl.user_id where t.id = ?"
+        conn.queryWithParams(queryy, new JsonArray().add(taskId), { query ->
+            if (query.failed()) {
+                println query.cause()
+                sendError(500, response)
+            } else {
+                if (query.result().getNumRows() > 0) {
+                    String json = query.result().results.toString()
+                    println json
+                    JsonArray array = new JsonArray()
+                    ArrayList<TaskBO> taskList = []
+                    query.result().results.each {
+                        TaskBO bo = new TaskBO(it)
+                        taskList.add(bo)
+                    }
+                    println array
+                    taskList.each {
+                        println it.name
+                    }
+                } else println 'no records found'
+            }
+        })
+    }
+
+
+    // pass -> name, username, password, designation, isActive, canAssign, role
+    boolean createUser(UserBO userBO) {
+        SQLConnection conn = context.get("conn")
+        String queryy = "select * from USER where username = '${userBO.username}'"
+        conn.queryWithParams(queryy, new JsonArray(), { query ->
+            if (query.failed()) {
+                println query.cause()
+                sendError(500, response)
+            } else {
+                if (query.result().getNumRows() > 0) {
+                    'USER already exists'
+                } else {
+                    conn.updateWithParams("INSERT INTO USER (name, username, password, designation, isActive, canAssign) VALUES (?, ?, ?, ?, ?, ?)",
+                            new JsonArray()
+                                    .add(userBO.name)
+                                    .add(userBO.username)
+                                    .add(userBO.password)
+                                    .add(userBO.designation)
+                                    .add(userBO.isActive)
+                                    .add(userBO.canAssign),
+                            { query2 ->
+                                if (query2.failed()) {
+                                    return false
+                                } else {
+                                    conn.updateWithParams("INSERT INTO USER_ROLE (role_id) VALUES (?)",
+                                            new JsonArray()
+                                                    .add(AppUtil.getRoleId(userBO.role)),
+                                            { query3 ->
+                                                if (query3.failed()) {
+                                                    return false
+                                                } else {
+                                                    return true
+                                                }
+                                            })
+                                }
+                            })
+                }
+            }
+        })
+    }
+
+    void createProject(ProjectBO projectBO) {
+
+//        SQLConnection conn = context.get("conn")
+        conn.updateWithParams("INSERT INTO PROJECT (name, createdBy, dateCreated) VALUES (?, ?, ?)",
+                new JsonArray()
+                        .add(projectBO.name)
+                        .add(projectBO.createdBy)
+                        .add(projectBO.dateCreated),
+                { query2 ->
+                    if (query2.failed()) {
+                        println query2.cause()
+                        return false
+                    } else {
+                        println 'project created successfully'
+                        return true
+                    }
+                })
+    }
+
+    void createTask(TaskBO taskBO) {
+        SQLConnection conn = context.get("conn")
+        String query = "INSERT INTO PROJECT (name, description, status, dueDate, isActive, projectId) VALUES (?, ?, ?, ?, ?, ?)"
+        conn.updateWithParams(query,
+                new JsonArray()
+                        .add(taskBO.name)
+                        .add(taskBO.description)
+                        .add(taskBO.status)
+                        .add(taskBO.dueDate)
+                        .add(taskBO.isActive)
+                        .add(taskBO.projectId),
+                { query2 ->
+                    if (query2.failed()) {
+                        return false
+                    } else {
+                        return true
+                    }
+                })
+    }
+
+    void createLabel(String labelName) {
+        SQLConnection conn = context.get("conn")
+        String query = "INSERT INTO LABEL (name) VALUES (?)"
+        conn.updateWithParams(query,
+                new JsonArray()
+                        .add(labelName),
+                { query2 ->
+                    if (query2.failed()) {
+                        return false
+                    } else {
+                        return true
+                    }
+                })
+    }
     void bootStrap() {
         createRoles()
         createUsers()
@@ -384,9 +503,24 @@ class BasicCrud extends AbstractVerticle {
     }
 
     void createProjects() {
-        1.times { num ->
-//            conn.updateWithParams('insert into PROJECT values')
-        }
+
+        String queryy = "select * from PROJECT"
+        conn.queryWithParams(queryy, new JsonArray(), { query ->
+            if (query.failed()) {
+                println query.cause()
+                sendError(500, response)
+            } else {
+                if (query.result().getNumRows() == 0) {
+                    3.times {
+                        ProjectBO projectBO = new ProjectBO()
+                        projectBO.name = "Project${it}"
+                        projectBO.createdBy = "${it +1}"
+                        projectBO.dateCreated = AppUtil.formattedDate(new Date(), AppUtil.mySqlDateFormat)
+                        createProject(projectBO)
+                    }
+                }
+            }
+        })
     }
 
     void createRoles() {
@@ -427,7 +561,7 @@ class BasicCrud extends AbstractVerticle {
             if (query0.failed()) {
                 println query0.cause()
             } else {
-                Integer role_id = query0.result().results.first().getAt(0) as Integer
+                Integer role_id = query0.result().results[0].getAt(0) as Integer
                 usernames.eachWithIndex { username, index ->
                     conn.queryWithParams(queryStr, new JsonArray().add(username), { query ->
                         if (query.failed()) {
@@ -508,6 +642,44 @@ class BasicCrud extends AbstractVerticle {
                 }
             }
         })
+
+
+    }
+
+    static String generateTable(JsonArray array) {
+        String data = getTableHeader()
+        array.each { JsonObject object ->
+            println(object)
+            data += """<tr>
+        <td>${object.getInteger("id")}</td>
+        <td>${object.getString("firstName")}</td>
+        <td>${object.getString("lastName")}</td>
+        <td>${object.getString("email")}</td>
+        <td>${object.getInteger("age")}</td>
+    </tr>"""
+        }
+
+        data += getTableFooter()
+        return data
+    }
+
+    static String getTableHeader() {
+        return """<table border=1>
+    <thead>
+    <tr>
+        <td>ID</td>
+        <td>First Name</td>
+        <td>Last Name</td>
+        <td>Email</td>
+        <td>Age</td>
+    </tr>
+    </thead>
+    <tbody>"""
+    }
+
+    static String getTableFooter() {
+        """ </tbody>
+</table>"""
     }
 
 }

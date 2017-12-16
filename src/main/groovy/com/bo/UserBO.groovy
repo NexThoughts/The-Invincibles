@@ -5,7 +5,7 @@ import io.vertx.core.json.JsonArray
 /**
  * Created by karan on 16/12/17.
  */
-class UserBO implements Serializable {
+class UserBO {
 
     String username
     String password
@@ -14,8 +14,9 @@ class UserBO implements Serializable {
     boolean isActive
     boolean canAssign
     String role
+    String name
 
-    UserBO(String username, String password, String designation, String id, boolean isActive, boolean canAssign, String role) {
+    UserBO(String username, String password, String designation, String id, boolean isActive, boolean canAssign, String role, String name) {
         this.username = username
         this.password = password
         this.designation = designation
@@ -23,6 +24,7 @@ class UserBO implements Serializable {
         this.isActive = isActive
         this.canAssign = canAssign
         this.role = role
+        this.name = name
     }
 
     UserBO(JsonArray jsonArray) {
@@ -34,6 +36,7 @@ class UserBO implements Serializable {
         this.isActive = jsonArray[4]
         this.canAssign = jsonArray[5]
         this.role = jsonArray[6]
+        this.name = jsonArray[7]
     }
 
     UserBO() {

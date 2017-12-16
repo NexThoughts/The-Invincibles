@@ -23,5 +23,7 @@ dependencies {
     compile 'com.google.code.gson:gson:2.8.1'
     compile 'io.vertx:vertx-mail-client:3.5.0'
 
+    compile group: 'com.diabolicallabs', name: 'vertx-cron', version: '3.5.0'
+
     compile group: 'mysql', name: 'mysql-connector-java', version: '5.1.13'
 }
