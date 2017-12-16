@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <title>TODO</title>
 
+    <script src='http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js'></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.3.0/jquery-confirm.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.3.0/jquery-confirm.min.js"></script>
+    <script src='https://cdn.jsdelivr.net/npm/jquery-validation@1.17.0/dist/jquery.validate.min.js'></script>
+
     <!--<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/meyer-reset/2.0/reset.min.css">-->
 
     <link rel='stylesheet prefetch'
@@ -183,7 +188,7 @@
     <div class="form" style="padding-top: toggle,
             padding-bottom: toggle">
         <h2>Login to your account</h2>
-        <form>
+        <form id="loginForm">
             <input type="text" name="username" placeholder="Username"/>
             <input type="password" name="password" placeholder="Password"/>
             <button>Login</button>
@@ -194,12 +199,10 @@
     <div class="cta"><a href="signup">SignUp</a>
     </div>
 </div>
-<script src='http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js'></script>
-<!--<script src='https://codepen.io/andytran/pen/vLmRVp.js'></script>-->
 
 <script type="text/javascript">
     // Toggle Function
-    $( document ).ready(function() {
+    $(document).ready(function () {
         $('.form').animate({
             height: "toggle",
             'padding-top': 'toggle',
@@ -207,6 +210,22 @@
             opacity: "toggle"
         }, "slow");
     });
+
+    $('#loginForm').validate({
+        submitHandler: function (form) {
+            var username = $('#username').val();
+            var password = $('#password').val();
+            if (!username) {
+                alert('Enter username');
+            }
+            if (!password) {
+                alert('Enter Password');
+                return;
+            }
+            form.submit();
+        }
+    });
+
 </script>
 
 </body>
