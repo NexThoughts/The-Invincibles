@@ -363,4 +363,90 @@ class BasicCrud extends AbstractVerticle {
             }
         })
     }
+
+
+    boolean createUser(UserBO userBO) {
+        SQLConnection conn = context.get("conn")
+        String queryy = "select * from USER where username = '${userBO.username}'"
+        conn.queryWithParams(queryy, new JsonArray().add(taskId), { query ->
+            if (query.failed()) {
+                println query.cause()
+                sendError(500, response)
+            } else {
+                if (query.result().getNumRows() > 0) {
+                    'USER already exists'
+                } else {
+                    conn.updateWithParams("INSERT INTO USER (name, username, password, designation, isActive, canAssign) VALUES (?, ?, ?, ?, ?, ?)",
+                            new JsonArray()
+                                    .add(userBO.name)
+                                    .add(userBO.username)
+                                    .add(userBO.password)
+                                    .add(userBO.designation)
+                                    .add(userBO.isActive)
+                                    .add(userBO.canAssign),
+                            { query2 ->
+                                if (query2.failed()) {
+                                    return false
+                                } else {
+                                    return true
+                                }
+                            })
+                }
+            }
+        })
+
+
+    }
+
+    void createProject(ProjectBO projectBO) {
+
+        SQLConnection conn = context.get("conn")
+        conn.updateWithParams("INSERT INTO PROJECT (name, createdBy, dateCreated) VALUES (?, ?, ?)",
+                new JsonArray()
+                        .add(projectBO.name)
+                        .add(projectBO.createdBy)
+                        .add(projectBO.dateCreated),
+                { query2 ->
+                    if (query2.failed()) {
+                        return false
+                    } else {
+                        return true
+                    }
+                })
+    }
+
+    void createTask(TaskBO taskBO) {
+        SQLConnection conn = context.get("conn")
+        String query = "INSERT INTO PROJECT (name, description, status, dueDate, isActive, projectId) VALUES (?, ?, ?, ?, ?, ?)"
+        conn.updateWithParams(query,
+                new JsonArray()
+                        .add(taskBO.name)
+                        .add(taskBO.description)
+                        .add(taskBO.status)
+                        .add(taskBO.dueDate)
+                        .add(taskBO.isActive)
+                        .add(taskBO.projectId),
+                { query2 ->
+                    if (query2.failed()) {
+                        return false
+                    } else {
+                        return true
+                    }
+                })
+    }
+
+    void createLabel(String labelName) {
+        SQLConnection conn = context.get("conn")
+        String query = "INSERT INTO LABEL (name) VALUES (?)"
+        conn.updateWithParams(query,
+                new JsonArray()
+                        .add(labelName),
+                { query2 ->
+                    if (query2.failed()) {
+                        return false
+                    } else {
+                        return true
+                    }
+                })
+    }
 }

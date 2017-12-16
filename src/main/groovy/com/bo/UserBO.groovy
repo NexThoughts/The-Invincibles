@@ -14,8 +14,9 @@ class UserBO {
     boolean isActive
     boolean canAssign
     String role
+    String name
 
-    UserBO(String username, String password, String designation, String id, boolean isActive, boolean canAssign, String role) {
+    UserBO(String username, String password, String designation, String id, boolean isActive, boolean canAssign, String role, String name) {
         this.username = username
         this.password = password
         this.designation = designation
@@ -23,6 +24,7 @@ class UserBO {
         this.isActive = isActive
         this.canAssign = canAssign
         this.role = role
+        this.name = name
     }
 
     UserBO(JsonArray jsonArray) {
@@ -34,6 +36,7 @@ class UserBO {
         this.isActive = jsonArray[4]
         this.canAssign = jsonArray[5]
         this.role = jsonArray[6]
+        this.name = jsonArray[7]
     }
 
     UserBO() {
