@@ -38,7 +38,12 @@ class BasicCrud extends AbstractVerticle {
         router.route().handler(BodyHandler.create())
 
         router.route("/*").handler(this.&showFirst)
-        router.get("/").handler(this.&showForm)
+        router.get("/").handler(this.&login)
+        router.get("/login").handler(this.&login)
+        router.get("/signup").handler(this.&signup)
+        router.post("/loginAuth").handler(this.&loginAuth)
+        router.post("/signup").handler(this.&createUser)
+        router.post("/forgetPassword").handler(this.&forgetPassword)
         router.get("/logout").handler(this.&logOut)
         router.get("/users").handler(this.&showUsers)
         router.get("/mailTrigeer").handler(this.&trigerNowMail)
@@ -51,8 +56,11 @@ class BasicCrud extends AbstractVerticle {
 
     void showForm(RoutingContext ctx) {
         SendEmail.triggerNow("anubhav@fintechlabs.in", "Test First", "Hello welcome to using vertx", vertx)
+    }
+
+    void login(RoutingContext ctx) {
         bootStrapUser(ctx)
-        engine.render(ctx, "templates/loginPage.ftl", { res ->
+        engine.render(ctx, "templates/user/login.ftl", { res ->
             ctx.response().putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end(res.result())
         })
     }
@@ -81,11 +89,11 @@ class BasicCrud extends AbstractVerticle {
     void saveUserMeth(RoutingContext ctx) {
         println("---------- Saving Record ---------")
         SQLConnection conn = ctx.get("conn")
-        conn.updateWithParams("INSERT INTO USER (name, username) VALUES (?, ?)",
+        conn.updateWithParams("INSERT INTO user (name, username, address) VALUES (?, ?, ?)",
                 new JsonArray()
                         .add(ctx.request().getFormAttribute("name"))
-                        .add(ctx.request().getFormAttribute("username")),
-//                        .add(ctx.request().getFormAttribute("address")),
+                        .add(ctx.request().getFormAttribute("username"))
+                        .add(ctx.request().getFormAttribute("address")),
                 { query ->
                     if (query.failed()) {
                         sendError(500, response)
@@ -174,6 +182,34 @@ class BasicCrud extends AbstractVerticle {
             context.vertx().sharedData().getLocalMap("access_tokens").remove(accessToken);
         }*/
         context.response().putHeader("location", "/").setStatusCode(302).end();
+    }
+
+    void signup(RoutingContext context) {
+        engine.render(context, "templates/user/signup.ftl", { res ->
+            context.response().putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end(res.result())
+        })
+    }
+
+    void forgetPassword(RoutingContext context) {
+        engine.render(context, "templates/user/forgetPassword.ftl", { res ->
+            context.response().putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end(res.result())
+        })
+    }
+
+    void createUser(RoutingContext context) {
+        SQLConnection conn = context.get("conn")
+        conn.updateWithParams("INSERT INTO user (name, username, address) VALUES (?, ?, ?)",
+                new JsonArray()
+                        .add(context.request().getFormAttribute("name"))
+                        .add(context.request().getFormAttribute("username"))
+                        .add(context.request().getFormAttribute("address")),
+                { query ->
+                    if (query.failed()) {
+                        sendError(500, response)
+                    } else {
+                        context.response().end("Record Inserted")
+                    }
+                })
     }
 
     void trigerNowMail() {
