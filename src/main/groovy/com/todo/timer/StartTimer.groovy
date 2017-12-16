@@ -9,6 +9,7 @@ import rx.Scheduler
 class StartTimer {
     public static void main(String[] args) {
         new StartTimer().executeTimer()
+        new StartTimer().timeExperssion()
     }
 
     void executeTimer() {
@@ -19,5 +20,15 @@ class StartTimer {
             println("@@@@@@@@@@@@@Triger@@@@@@@@@@@@@")
             SendEmail.triggerNow("anubhav@fintechlabs.in", "iiiiiiii", "TESTING HELLO", vertx)
         });
+    }
+
+    void timeExperssion() {
+        Vertx vertx = Vertx.vertx()
+        vertx.setTimer(1000, { id ->
+//            SendEmail.triggerNow("anubhav@fintechlabs.in", "iiiiiiii", "TESTING HELLO", vertx)
+        })
+        vertx.setPeriodic(1000 * 60 * 60 * 24, { id ->
+//            SendEmail.triggerNow("anubhav@fintechlabs.in", "iiiiiiii", "TESTING HELLO", vertx)
+        })
     }
 }

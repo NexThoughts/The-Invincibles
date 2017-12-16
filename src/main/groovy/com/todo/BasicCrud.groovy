@@ -210,18 +210,56 @@ class BasicCrud extends AbstractVerticle {
 
     void createUser(RoutingContext context) {
         SQLConnection conn = context.get("conn")
-        conn.updateWithParams("INSERT INTO user (name, username, address) VALUES (?, ?, ?)",
-                new JsonArray()
-                        .add(context.request().getFormAttribute("name"))
-                        .add(context.request().getFormAttribute("username"))
-                        .add(context.request().getFormAttribute("address")),
-                { query ->
-                    if (query.failed()) {
-                        sendError(500, response)
-                    } else {
-                        context.response().end("Record Inserted")
+        HttpServerResponse response = context.response()
+        String confirmPassword = context.request().getFormAttribute("confirmPassword")
+        UserBO userBO = new UserBO()
+        userBO.username = context.request().getFormAttribute("username")
+        userBO.password = context.request().getFormAttribute("password")
+        userBO.name = context.request().getFormAttribute("name")
+        if (!(userBO.password)) {
+            engine.render(context, "templates/user/signup.ftl", { res ->
+                response.putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end("Please Enter Password")
+            })
+        } else if (!(userBO.username)) {
+            engine.render(context, "templates/user/signup.ftl", { res ->
+                response.putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end("Please Enter UserName")
+            })
+        } else if (!(userBO.name)) {
+            engine.render(context, "templates/user/signup.ftl", { res ->
+                response.putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end("Please Enter Name")
+            })
+        } else if (userBO.username) {
+            String queryStr = "SELECT * FROM USER where username = ?"
+            conn.queryWithParams(queryStr, new JsonArray().add(userBO.username), { query ->
+                if (query.failed()) {
+                    println query.cause()
+                    engine.render(context, "templates/user/signup.ftl", { res ->
+                        response.putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end("Something went wrong")
+                    })
+                } else {
+                    if (query.result().getNumRows() == 1) {
+                        engine.render(context, "templates/user/signup.ftl", { res ->
+                            response.putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end("USER already Exists")
+                        })
                     }
+                }
+            })
+        } else if (confirmPassword) {
+            engine.render(context, "templates/user/signup.ftl", { res ->
+                response.putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end("Please Enter Confirm Password")
+            })
+        } else if (userBO.password && confirmPassword && !(userBO.password?.equals(confirmPassword))) {
+            engine.render(context, "templates/user/signup.ftl", { res ->
+                response.putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end("Password and confirm Password should be match")
+            })
+        } else {
+            userBO.role = "admin"
+            if (createUser(userBO)) {
+                engine.render(context, "templates/dashProfile.ftl", { res ->
+                    response.putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end()
                 })
+            }
+        }
     }
 
     void trigerNowMail() {
@@ -375,7 +413,6 @@ class BasicCrud extends AbstractVerticle {
         })
     }
 
-
     // pass -> name, username, password, designation, isActive, canAssign, role
     boolean createUser(UserBO userBO) {
         SQLConnection conn = context.get("conn")
@@ -489,7 +526,7 @@ class BasicCrud extends AbstractVerticle {
                     3.times {
                         ProjectBO projectBO = new ProjectBO()
                         projectBO.name = "Project${it}"
-                        projectBO.createdBy = "${it +1}"
+                        projectBO.createdBy = "${it + 1}"
                         projectBO.dateCreated = AppUtil.formattedDate(new Date(), AppUtil.mySqlDateFormat)
                         createProject(projectBO)
                     }
