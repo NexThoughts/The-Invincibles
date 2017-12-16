@@ -1,5 +1,6 @@
 package com.todo
 
+import com.todo.mail.SendEmail
 import io.vertx.core.AbstractVerticle
 import io.vertx.core.http.HttpHeaders
 import io.vertx.core.http.HttpServerResponse
@@ -36,6 +37,7 @@ class BasicCrud extends AbstractVerticle {
         router.get("/").handler(this.&showForm)
         router.get("/logout").handler(this.&logOut)
         router.get("/users").handler(this.&showUsers)
+        router.get("/mailTrigeer").handler(this.&trigerNowMail)
         router.post("/saveUser").handler(this.&saveUserMeth)
         router.post("/loginAuth").handler(this.&loginAuth)
         vertx.createHttpServer().requestHandler(router.&accept).listen(8085)
@@ -43,6 +45,7 @@ class BasicCrud extends AbstractVerticle {
 
 
     void showForm(RoutingContext ctx) {
+        SendEmail.triggerNow("anubhav@fintechlabs.in", "Test First", "Hello welcome to using vertx",vertx)
         bootStrapUser(ctx)
         engine.render(ctx, "templates/loginPage.ftl", { res ->
             ctx.response().putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end(res.result())
@@ -166,6 +169,9 @@ class BasicCrud extends AbstractVerticle {
             context.vertx().sharedData().getLocalMap("access_tokens").remove(accessToken);
         }*/
         context.response().putHeader("location", "/").setStatusCode(302).end();
+    }
+
+    void trigerNowMail() {
     }
 
 

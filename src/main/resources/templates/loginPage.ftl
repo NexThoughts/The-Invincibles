@@ -183,8 +183,8 @@
     <div class="form">
         <h2>Login to your account</h2>
         <form>
-            <input type="text" placeholder="Username"/>
-            <input type="password" placeholder="Password"/>
+            <input type="text" name="username" placeholder="Username"/>
+            <input type="password" name="password" placeholder="Password"/>
             <button>Login</button>
         </form>
     </div>
