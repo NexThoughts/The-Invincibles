@@ -57,6 +57,7 @@ class BasicCrud extends AbstractVerticle {
         router.post("/loginAuth").handler(this.&loginAuth)
         router.get("/test").handler(this.&test)
         router.get("/projects").handler(this.&fetchProjectList)
+//        router.get("/projects/create").handler(this.&)
         vertx.createHttpServer().requestHandler(router.&accept).listen(8085)
     }
 
@@ -300,7 +301,6 @@ class BasicCrud extends AbstractVerticle {
     void fetchProjectList(RoutingContext ctx) {
 
         println("---------- Query called---------")
-        SQLConnection conn = ctx.get("conn")
         String queryy = "select p.id, name, dateCreated, createdBy from PROJECT p "
         conn.queryWithParams(queryy, new JsonArray(), { query ->
             if (query.failed()) {
@@ -320,6 +320,12 @@ class BasicCrud extends AbstractVerticle {
                     projectList.each {
                         println it.name
                     }
+
+                    ctx.put('projects', generateProjectsTable(projectList))
+                    engine.render(ctx, "templates/projects.ftl", { res ->
+                        ctx.response().putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end(res.result())
+                    })
+
                 } else println 'no records found'
             }
         })
@@ -383,6 +389,26 @@ class BasicCrud extends AbstractVerticle {
             }
         })
     }
+
+    void getProjects(RoutingContext ctx) {
+
+    }
+
+    String generateProjectsTable(List<ProjectBO> projects) {
+        println "projects - " + projects*.name
+        if (!projects) {
+            return ''
+        }
+        StringJoiner joiner = new StringJoiner('<br>')
+        joiner.add('<h2>Select Project</h2>')
+
+        projects*.name.each { name ->
+            joiner.add("<a href='' class='btn btn-primary'>${name}</a>")
+        }
+        println(joiner.toString())
+        return joiner.toString()
+    }
+
 
     void fetchLabelListForTask(RoutingContext ctx, Integer taskId) {
 
@@ -507,7 +533,6 @@ class BasicCrud extends AbstractVerticle {
                     }
                 })
     }
-
     void bootStrap() {
         createRoles()
         createUsers()
@@ -693,4 +718,5 @@ class BasicCrud extends AbstractVerticle {
         """ </tbody>
 </table>"""
     }
+
 }
