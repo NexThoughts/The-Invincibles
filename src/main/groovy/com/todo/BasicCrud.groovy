@@ -58,6 +58,9 @@ class BasicCrud extends AbstractVerticle {
         router.post("/loginAuth").handler(this.&loginAuth)
         router.get("/test").handler(this.&test)
         router.get("/projects").handler(this.&fetchProjectList)
+        router.get("/member").handler(this.&createMember)
+        router.post("/member").handler(this.&saveMember)
+        router.get("/dashboard").handler(this.&dashboard)
 //        router.get("/projects/create").handler(this.&)
         vertx.createHttpServer().requestHandler(router.&accept).listen(8085)
     }
@@ -275,6 +278,74 @@ class BasicCrud extends AbstractVerticle {
             })
         }
     }
+
+
+    void createMember(RoutingContext context) {
+        engine.render(context, "templates/user/createMember.ftl", { res ->
+            context.response().putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end(res.result())
+        })
+    }
+
+    void saveMember(RoutingContext context) {
+        SQLConnection conn = context.get("conn")
+        HttpServerResponse response = context.response()
+        UserBO userBO = new UserBO()
+        userBO.username = context.request().getFormAttribute("username")
+        userBO.name = context.request().getFormAttribute("name")
+        userBO.password = UUID.randomUUID().toString()
+        userBO.role = context.request().getFormAttribute("role")
+        println("========= IN ACTION")
+        if (!(userBO.username)) {
+            println("========= IN USERNAME")
+            engine.render(context, "templates/user/createMember.ftl", { res ->
+                response.putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end("Please Enter UserName")
+            })
+        } else if (!(userBO.name)) {
+            println("========= IN NAME")
+            engine.render(context, "templates/user/createMember.ftl", { res ->
+                response.putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end("Please Enter Name")
+            })
+
+        } else {
+            println("========= IN USERNAME VALIDATION")
+            String queryStr = "SELECT * FROM USER where username = ?"
+            conn.queryWithParams(queryStr, new JsonArray().add(userBO.username), { query ->
+                if (query.failed()) {
+                    println query.cause()
+                    engine.render(context, "templates/user/createMember.ftl", { res ->
+                        response.putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end("Something went wrong")
+                    })
+                } else {
+                    if (query.result().getNumRows() > 0) {
+                        engine.render(context, "templates/user/createMember.ftl", { res ->
+                            response.putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end("USER already Exists")
+                        })
+                    } else {
+                        if (createNewUser(userBO)) {
+                            println("======= USER CREATED =======")
+                            SendEmail.triggerNow(userBO.username, "Welcome Mail", "Hi ${userBO.name ?: ''},you are added on our plateform.<a href=http://localhost:8085/dashboard>Please Click Link</a>", "<br>you are added on our plateform., <a href=http://localhost:8085/dashboard>Please Click Link</a>", vertx)
+                            engine.render(context, "templates/dashProfile.ftl", { res ->
+                                response.putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end(res.result())
+                            })
+                        } else {
+                            println("======= HAPPENDED WRONG =======")
+                            engine.render(context, "templates/user/createMember.ftl", { res ->
+                                response.putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end("Something went wrong")
+                            })
+                        }
+                    }
+                }
+            })
+        }
+
+    }
+
+    void dashboard(RoutingContext context) {
+        engine.render(context, "templates/dashProfile.ftl", { res ->
+            context.response().putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end(res.result())
+        })
+    }
+
 
     void trigerNowMail() {
     }

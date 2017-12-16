@@ -6,7 +6,7 @@ import io.vertx.ext.mail.MailClient
 class SendEmail {
 
 
-    public static void triggerNow(String toMail,String subject,String content,Vertx vertx) {
+    public static void triggerNow(String toMail, String subject, String content, String htmlView, Vertx vertx) {
 
 //        def vertx = Vertx.vertx()
 
@@ -29,9 +29,10 @@ class SendEmail {
         message.from = "anubhavgoyalmca@gmail.com"
         message.to = "${toMail}"
 //        message.cc = "Another User <another@example.net>"
-        message.text = content?:"Welcome to Vertx Demo"
-        message.subject = subject?:"Test"
-//        message.html = "Hi, this is html text <a href=\"http://vertx.io\">vertx.io</a>"
+        message.text = content ?: "Welcome to Vertx Demo"
+        message.subject = subject ?: "Test"
+        if (htmlView)
+            message.html = htmlView
 
         println "-----message-------" + message
 
@@ -41,7 +42,7 @@ class SendEmail {
                 println(result.result())
                 println "--------- Sending Email Message Succeeded---------"
             } else {
-                println "--------- Sending Email Message FAILED---------"+result.cause().printStackTrace()
+                println "--------- Sending Email Message FAILED---------" + result.cause().printStackTrace()
                 result.cause().printStackTrace()
             }
         })

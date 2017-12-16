@@ -2,8 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>WELCOME</title>
+    <title>Create User</title>
 
+    <script src='http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js'></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.3.0/jquery-confirm.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.3.0/jquery-confirm.min.js"></script>
+    <script src='https://cdn.jsdelivr.net/npm/jquery-validation@1.17.0/dist/jquery.validate.min.js'></script>
+
+    <!--<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/meyer-reset/2.0/reset.min.css">-->
 
     <link rel='stylesheet prefetch'
           href='https://fonts.googleapis.com/css?family=Roboto:400,100,300,500,700,900|RobotoDraft:400,100,300,500,700,900'>
@@ -19,6 +25,7 @@
             -moz-osx-font-smoothing: grayscale;
         }
 
+        /* Pen Title */
         .pen-title {
             padding: 50px 0;
             text-align: center;
@@ -171,25 +178,27 @@
 <body>
 
 <div class="pen-title">
-    <h1>Hi, </h1>
+    <h1>ToDo App SignUp</h1>
     <div style="display: none"><span>Pen <i class='fa fa-paint-brush'></i> + <i class='fa fa-code'></i> by <a
             href='http://andytran.me'>Andy Tran</a></span></div>
 </div>
 <!-- Form Module-->
 <div class="module form-module">
-
-    <div class="cta"><a href="projects">Projects</a>
-    </div>
-    <div class="cta"><a href="users">Users </a>
-    </div>
-    <div class="cta"><a href="member">Add Users </a>
+    <div class="form">
+        <h2>Create User</h2>
+        <form id="createMemberForm" action="member" method="post">
+            <input type="text" id="name" name="name" placeholder="Name"/>
+            <input type="text" id='username' name="username" placeholder="Username"/>
+            <select name="role">
+                <option value="">Select</option>
+                <option value="admin">Admin</option>
+                <option value="user">Team Member</option>
+            </select>
+            <button>Add Member</button>
+        </form>
     </div>
 </div>
-<script src='http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js'></script>
-<!--<script src='https://codepen.io/andytran/pen/vLmRVp.js'></script>-->
-
 <script type="text/javascript">
-    // Toggle Function
     $(document).ready(function () {
         $('.form').animate({
             height: "toggle",
@@ -198,7 +207,23 @@
             opacity: "toggle"
         }, "slow");
     });
-</script>
 
+    $("#signupForm").validate({
+        submitHandler: function (form) {
+            var name = $('#name').val();
+            var username = $('#username').val();
+
+            if (!name) {
+                alert('Enter name');
+                return;
+            }
+            if (!username) {
+                alert('Enter username');
+            }
+            form.submit();
+        }
+    });
+
+</script>
 </body>
 </html>
