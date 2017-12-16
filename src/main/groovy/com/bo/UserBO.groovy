@@ -5,7 +5,7 @@ import io.vertx.core.json.JsonArray
 /**
  * Created by karan on 16/12/17.
  */
-class UserBO implements Serializable {
+class UserBO {
 
     String username
     String password

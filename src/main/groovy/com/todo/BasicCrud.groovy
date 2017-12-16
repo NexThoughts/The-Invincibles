@@ -1,6 +1,7 @@
 package com.todo
 
 import com.bo.ProjectBO
+import com.bo.TaskBO
 import com.bo.UserBO
 import com.bo.UserProjectBO
 import com.todo.mail.SendEmail
@@ -186,7 +187,7 @@ class BasicCrud extends AbstractVerticle {
 
     void fetchUserListWithRole(RoutingContext ctx) {
 
-        println("---------- Testing called---------")
+        println("---------- Query called---------")
         SQLConnection conn = ctx.get("conn")
         conn.queryWithParams(SqlUtil.queryUserListWithRole(), new JsonArray(), { query ->
             if (query.failed()) {
@@ -213,9 +214,9 @@ class BasicCrud extends AbstractVerticle {
 
     void fetchProjectList(RoutingContext ctx) {
 
-        println("---------- Testing called---------")
+        println("---------- Query called---------")
         SQLConnection conn = ctx.get("conn")
-        String queryy = "select p.id, name, dateCreated, createdBy from project p "
+        String queryy = "select p.id, name, dateCreated, createdBy from PROJECT p "
         conn.queryWithParams(queryy, new JsonArray(), { query ->
             if (query.failed()) {
                 println query.cause()
@@ -241,7 +242,7 @@ class BasicCrud extends AbstractVerticle {
 
     void fetchUserListForProject(RoutingContext ctx, Integer projectId) {
 
-        println("---------- Testing called---------")
+        println("---------- Query called---------")
         SQLConnection conn = ctx.get("conn")
         String queryy = "select u.id, u.username, u.name, p.name, p.id from USER u " +
                 "inner join USER_PROJECT up on u.id = up.user_id inner join PROJECT p " +
@@ -271,9 +272,10 @@ class BasicCrud extends AbstractVerticle {
 
     void fetchTaskListForProject(RoutingContext ctx, Integer projectId) {
 
-        println("---------- Testing called---------")
+        println("---------- Query called---------")
         SQLConnection conn = ctx.get("conn")
-        String queryy = "select "
+        String queryy = "select t.id, t.name, t.description, t.status, isActive, dueDate, p.id from TASK t " +
+                " inner join PROJECT p on p.id = t.project_id where p.id = ?"
         conn.queryWithParams(queryy, new JsonArray().add(projectId), { query ->
             if (query.failed()) {
                 println query.cause()
@@ -283,18 +285,46 @@ class BasicCrud extends AbstractVerticle {
                     String json = query.result().results.toString()
                     println json
                     JsonArray array = new JsonArray()
-                    ArrayList<UserProjectBO> userList = []
+                    ArrayList<TaskBO> taskList = []
                     query.result().results.each {
-                        UserProjectBO bo = new UserProjectBO(it)
-                        userList.add(bo)
+                        TaskBO bo = new TaskBO(it)
+                        taskList.add(bo)
                     }
                     println array
-                    userList.each {
-                        println it.userName
+                    taskList.each {
+                        println it.name
                     }
                 } else println 'no records found'
             }
         })
     }
 
+    void fetchLabelListForTask(RoutingContext ctx, Integer taskId) {
+
+        println("---------- Query called---------")
+        SQLConnection conn = ctx.get("conn")
+        String queryy = "select labelName, task_id, dateCreated, user_id, u.name, u.username, t.name from TASK_LABEL tl inner join TASK t " +
+                "on t.id = tl.task_id inner join USER u on u.id = tl.user_id where t.id = ?"
+        conn.queryWithParams(queryy, new JsonArray().add(taskId), { query ->
+            if (query.failed()) {
+                println query.cause()
+                sendError(500, response)
+            } else {
+                if (query.result().getNumRows() > 0) {
+                    String json = query.result().results.toString()
+                    println json
+                    JsonArray array = new JsonArray()
+                    ArrayList<TaskBO> taskList = []
+                    query.result().results.each {
+                        TaskBO bo = new TaskBO(it)
+                        taskList.add(bo)
+                    }
+                    println array
+                    taskList.each {
+                        println it.name
+                    }
+                } else println 'no records found'
+            }
+        })
+    }
 }
