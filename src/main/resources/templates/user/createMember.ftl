@@ -178,7 +178,7 @@
 <body>
 
 <div class="pen-title">
-    <h1>ToDo App SignUp</h1>
+    <h1>Add Member</h1>
     <div style="display: none"><span>Pen <i class='fa fa-paint-brush'></i> + <i class='fa fa-code'></i> by <a
             href='http://andytran.me'>Andy Tran</a></span></div>
 </div>
