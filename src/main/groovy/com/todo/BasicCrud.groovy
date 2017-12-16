@@ -22,7 +22,7 @@ class BasicCrud extends AbstractVerticle {
 
     public void start() {
         JsonObject config = new JsonObject()
-                .put("url", "jdbc:mysql://localhost:3306/vertx_demo?autoreconnect=true")
+                .put("url", "jdbc:mysql://localhost:3306/rock_hackathon?autoreconnect=true")
                 .put("user", "root")
                 .put("password", "nextdefault")
                 .put("driver_class", "com.mysql.jdbc.Driver")
