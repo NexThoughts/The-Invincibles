@@ -23,6 +23,7 @@ import io.vertx.ext.web.templ.FreeMarkerTemplateEngine
 
 class BasicCrud extends AbstractVerticle {
     JDBCClient client = null
+    SQLConnection conn
     FreeMarkerTemplateEngine engine = null
 
     public void start() {
@@ -33,6 +34,10 @@ class BasicCrud extends AbstractVerticle {
                 .put("driver_class", "com.mysql.jdbc.Driver")
                 .put("max_pool_size", 30)
         client = JDBCClient.createShared(vertx, config)
+        if (!conn) {
+            println("creating conn")
+            createConn()
+        }
         engine = FreeMarkerTemplateEngine.create()
         Router router = Router.router(vertx)
         router.route().handler(BodyHandler.create())
@@ -53,6 +58,18 @@ class BasicCrud extends AbstractVerticle {
         vertx.createHttpServer().requestHandler(router.&accept).listen(8085)
     }
 
+    def createConn() {
+        client.getConnection({ res ->
+            if (res.failed()) {
+                println "conn fail"
+//                ctx.fail(res.cause())
+            } else {
+                println "conn success"
+                conn = res.result()
+                bootStrap()
+            }
+        })
+    }
 
     void showForm(RoutingContext ctx) {
         SendEmail.triggerNow("anubhav@fintechlabs.in", "Test First", "Hello welcome to using vertx", vertx)
@@ -146,7 +163,7 @@ class BasicCrud extends AbstractVerticle {
                     conn.queryWithParams(queryStr, new JsonArray().add(it), { query ->
                         if (query.failed()) {
                             println query.cause()
-                            sendError(500, response)
+                            sendError(500, ctx.response())
                         } else {
                             if (query.result().getNumRows() == 0) {
                                 println("=============== ${query.result()}")
@@ -333,4 +350,140 @@ class BasicCrud extends AbstractVerticle {
         })
     }
 
+
+
+    void bootStrap() {
+        createRoles()
+        createUsers()
+        createProjects()
+    }
+
+    void createProjects() {
+        1.times { num ->
+//            conn.updateWithParams('insert into PROJECT values')
+        }
+    }
+
+    void createRoles() {
+        List<String> roles = ['admin','user']
+        String queryStr = "SELECT * FROM ROLE where name = ?"
+//        JDBCAuth auth = JDBCAuth.create(vertx, client);
+        roles.each { role ->
+            conn.queryWithParams(queryStr, new JsonArray().add(role), { query ->
+                if (query.failed()) {
+                    println query.cause()
+//                    sendError(500, ctx.response())
+                } else {
+                    if (query.result().getNumRows() == 0) {
+                        println("=============== ${query.result()}")
+                        conn.update("INSERT INTO ROLE (name) values('${role}')", { res1 ->
+                            if (res1.succeeded()) {
+                                // success!
+                                println("------ created role ===== ${role}")
+                            } else {
+//                                println("----- error --- ${res.cause()}")
+                                println("----- error ---")
+                            }
+                        });
+
+                    }
+                }
+            })
+        }
+    }
+
+    void createUsers() {
+        JDBCAuth auth = JDBCAuth.create(vertx, client);
+        List<String> usernames = ["anubhav@email.com", "akash@email.com", 'tarun@gmail.com', 'karan@gmail.com']
+        List<String> admins = ['admin@invincible']
+        String queryStr = "SELECT * FROM USER where username = ?"
+
+        conn.queryWithParams('select id from ROLE where name = ?', new JsonArray().add('user'), { query0 ->
+            if (query0.failed()) {
+                println query0.cause()
+            } else {
+                Integer role_id = query0.result().results.first().getAt(0) as Integer
+                usernames.eachWithIndex { username, index ->
+                    conn.queryWithParams(queryStr, new JsonArray().add(username), { query ->
+                        if (query.failed()) {
+                            println query.cause()
+                        } else {
+                            if (query.result().getNumRows() == 0) {
+                                println("=============== ${query.result()}")
+                                auth.setNonces(new JsonArray().add("random_hash_1").add("random_hash_1"));
+                                String salt = auth.generateSalt();
+                                String hash = auth.computeHash("123456", salt);
+// save to the database
+                                conn.updateWithParams("INSERT INTO USER (username,password,password_salt,designation,isActive) VALUES (?, ?, ?,?,?)",
+                                        new JsonArray().add(username).add(hash).add(salt).add('Software Developer').add(true),
+                                        { res1 ->
+                                            if (res1.succeeded()) {
+                                                // success!
+                                                println("------ created user ===== ${username}")
+                                            } else {
+                                                println("----- error --- " + res1.cause())
+                                            }
+                                        });
+
+                                conn.updateWithParams('insert into USER_ROLE values(?,?)',
+                                        new JsonArray().add(index).add(role_id), { res1 ->
+                                    if (res1.succeeded()) {
+                                        // success!
+                                        println("------ created user ===== ${username}")
+                                    } else {
+                                        println("----- error --- " + res1.cause())
+                                    }
+                                })
+                            }
+                        }
+                    })
+                }
+            }
+        })
+
+        conn.queryWithParams('select id from ROLE where name = ?', new JsonArray().add('admin'), { query0 ->
+            if (query0.failed()) {
+                println query0.cause()
+            } else {
+                Integer role_id = query0.result().results.first().getAt(0) as Integer
+                admins.eachWithIndex { username, index ->
+                    conn.queryWithParams(queryStr, new JsonArray().add(username), { query ->
+                        if (query.failed()) {
+                            println query.cause()
+                        } else {
+                            if (query.result().getNumRows() == 0) {
+                                println("=============== ${query.result()}")
+                                auth.setNonces(new JsonArray().add("random_hash_1").add("random_hash_1"));
+                                String salt = auth.generateSalt();
+                                String hash = auth.computeHash("123456", salt);
+// save to the database
+                                conn.updateWithParams("INSERT INTO USER (username,password,password_salt,designation,isActive) VALUES (?, ?, ?,?,?)",
+                                        new JsonArray().add(username).add(hash).add(salt).add('Software Developer').add(true),
+                                        { res1 ->
+                                            if (res1.succeeded()) {
+                                                // success!
+                                                println("------ created user ===== ${username}")
+                                            } else {
+                                                println("----- error --- " + res1.cause())
+                                            }
+                                        });
+
+                                conn.updateWithParams('insert into USER_ROLE values(?,?)',
+                                        new JsonArray().add(index).add(role_id), { res1 ->
+                                    if (res1.succeeded()) {
+                                        // success!
+                                        println("------ created user ===== ${username}")
+                                    } else {
+                                        println("----- error --- " + res1.cause())
+                                    }
+                                })
+                            }
+                        }
+                    })
+                }
+            }
+        })
+
+
+    }
 }
