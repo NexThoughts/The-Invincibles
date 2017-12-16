@@ -187,25 +187,15 @@ class BasicCrud extends AbstractVerticle {
                 if (query.result().getNumRows() > 0) {
                     String json = query.result().results.toString()
                     println json
-                    JsonArray arr = new JsonArray()
-                    query.result().results.forEach(arr.&add)
                     JsonArray array = new JsonArray()
                     ArrayList<UserBO> userList = []
                     query.result().results.each {
-                        JsonObject obj = new JsonObject()
-                        UserBO bo = new UserBO()
-                        obj.put("username", it[0])
-                        obj.put("password", it[1])
-                        obj.put("designation", it[2])
-                        obj.put("id", it[3])
-                        obj.put("isActive", it[4])
-                        obj.put("canAssign", it[5])
-                        obj.put("role", it[6])
-                        userList.add(obj)
+                        UserBO bo = new UserBO(it)
+                        userList.add(bo)
                     }
                     println array
                     userList.each {
-                        println it
+                        println it.username
                     }
                 } else println 'no records found'
             }

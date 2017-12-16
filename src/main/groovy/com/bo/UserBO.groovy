@@ -30,7 +30,7 @@ class UserBO implements Serializable {
         this.username = jsonArray[0]
         this.password = jsonArray[1]
         this.designation = jsonArray[2]
-        this.id = jsonArray[3]
+        this.id = jsonArray.getInteger(3)
         this.isActive = jsonArray[4]
         this.canAssign = jsonArray[5]
         this.role = jsonArray[6]
