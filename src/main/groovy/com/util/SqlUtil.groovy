@@ -6,4 +6,7 @@ package com.util
 class SqlUtil {
 
 
+    String queryUserList() {
+        "select "
+    }
 }
