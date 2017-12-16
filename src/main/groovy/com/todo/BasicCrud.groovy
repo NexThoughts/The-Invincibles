@@ -217,19 +217,32 @@ class BasicCrud extends AbstractVerticle {
         userBO.username = context.request().getFormAttribute("username")
         userBO.password = context.request().getFormAttribute("password")
         userBO.name = context.request().getFormAttribute("name")
+        println("========= IN ACTION")
         if (!(userBO.password)) {
+            println("========= IN PASSWORD")
             engine.render(context, "templates/user/signup.ftl", { res ->
                 response.putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end("Please Enter Password")
             })
         } else if (!(userBO.username)) {
+            println("========= IN USERNAME")
             engine.render(context, "templates/user/signup.ftl", { res ->
                 response.putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end("Please Enter UserName")
             })
         } else if (!(userBO.name)) {
+            println("========= IN NAME")
             engine.render(context, "templates/user/signup.ftl", { res ->
                 response.putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end("Please Enter Name")
             })
+        } else if (confirmPassword) {
+            engine.render(context, "templates/user/signup.ftl", { res ->
+                response.putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end("Please Enter Confirm Password")
+            })
+        } else if (userBO.password && confirmPassword && !(userBO.password?.equals(confirmPassword))) {
+            engine.render(context, "templates/user/signup.ftl", { res ->
+                response.putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end("Password and confirm Password should be match")
+            })
         } else if (userBO.username) {
+            println("========= IN USERNAME VALIDATION")
             String queryStr = "SELECT * FROM USER where username = ?"
             conn.queryWithParams(queryStr, new JsonArray().add(userBO.username), { query ->
                 if (query.failed()) {
@@ -242,24 +255,16 @@ class BasicCrud extends AbstractVerticle {
                         engine.render(context, "templates/user/signup.ftl", { res ->
                             response.putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end("USER already Exists")
                         })
+                    } else {
+                        userBO.role = "admin"
+                        if (createNewUser(userBO)) {
+                            engine.render(context, "templates/dashProfile.ftl", { res ->
+                                response.putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end()
+                            })
+                        }
                     }
                 }
             })
-        } else if (confirmPassword) {
-            engine.render(context, "templates/user/signup.ftl", { res ->
-                response.putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end("Please Enter Confirm Password")
-            })
-        } else if (userBO.password && confirmPassword && !(userBO.password?.equals(confirmPassword))) {
-            engine.render(context, "templates/user/signup.ftl", { res ->
-                response.putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end("Password and confirm Password should be match")
-            })
-        } else {
-            userBO.role = "admin"
-            if (createUser(userBO)) {
-                engine.render(context, "templates/dashProfile.ftl", { res ->
-                    response.putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end()
-                })
-            }
         }
     }
 
@@ -440,8 +445,7 @@ class BasicCrud extends AbstractVerticle {
     }
 
     // pass -> name, username, password, designation, isActive, canAssign, role
-    boolean createUser(UserBO userBO) {
-        SQLConnection conn = context.get("conn")
+    boolean createNewUser(UserBO userBO) {
         String queryy = "select * from USER where username = '${userBO.username}'"
         conn.queryWithParams(queryy, new JsonArray(), { query ->
             if (query.failed()) {
@@ -456,9 +460,9 @@ class BasicCrud extends AbstractVerticle {
                                     .add(userBO.name)
                                     .add(userBO.username)
                                     .add(userBO.password)
-                                    .add(userBO.designation)
-                                    .add(userBO.isActive)
-                                    .add(userBO.canAssign),
+                                    .add(userBO.designation ?: '')
+                                    .add(userBO.isActive ?: true)
+                                    .add(userBO.canAssign ?: true),
                             { query2 ->
                                 if (query2.failed()) {
                                     return false
@@ -533,6 +537,7 @@ class BasicCrud extends AbstractVerticle {
                     }
                 })
     }
+
     void bootStrap() {
         createRoles()
         createUsers()
