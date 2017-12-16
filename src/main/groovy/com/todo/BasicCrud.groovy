@@ -1,8 +1,10 @@
 package com.todo
 
+import com.bo.ProjectBO
 import com.bo.UserBO
-import com.util.SqlUtil
+import com.bo.UserProjectBO
 import com.todo.mail.SendEmail
+import com.util.SqlUtil
 import io.vertx.core.AbstractVerticle
 import io.vertx.core.http.HttpHeaders
 import io.vertx.core.http.HttpServerResponse
@@ -48,7 +50,7 @@ class BasicCrud extends AbstractVerticle {
 
 
     void showForm(RoutingContext ctx) {
-        SendEmail.triggerNow("anubhav@fintechlabs.in", "Test First", "Hello welcome to using vertx",vertx)
+        SendEmail.triggerNow("anubhav@fintechlabs.in", "Test First", "Hello welcome to using vertx", vertx)
         bootStrapUser(ctx)
         engine.render(ctx, "templates/loginPage.ftl", { res ->
             ctx.response().putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end(res.result())
@@ -182,7 +184,7 @@ class BasicCrud extends AbstractVerticle {
         response.setStatusCode(statusCode).end()
     }
 
-    void test(RoutingContext ctx) {
+    void fetchUserListWithRole(RoutingContext ctx) {
 
         println("---------- Testing called---------")
         SQLConnection conn = ctx.get("conn")
@@ -208,4 +210,91 @@ class BasicCrud extends AbstractVerticle {
             }
         })
     }
+
+    void fetchProjectList(RoutingContext ctx) {
+
+        println("---------- Testing called---------")
+        SQLConnection conn = ctx.get("conn")
+        String queryy = "select p.id, name, dateCreated, createdBy from project p "
+        conn.queryWithParams(queryy, new JsonArray(), { query ->
+            if (query.failed()) {
+                println query.cause()
+                sendError(500, response)
+            } else {
+                if (query.result().getNumRows() > 0) {
+                    String json = query.result().results.toString()
+                    println json
+                    JsonArray array = new JsonArray()
+                    ArrayList<ProjectBO> projectList = []
+                    query.result().results.each {
+                        ProjectBO bo = new ProjectBO(it)
+                        projectList.add(bo)
+                    }
+                    println array
+                    projectList.each {
+                        println it.name
+                    }
+                } else println 'no records found'
+            }
+        })
+    }
+
+    void fetchUserListForProject(RoutingContext ctx, Integer projectId) {
+
+        println("---------- Testing called---------")
+        SQLConnection conn = ctx.get("conn")
+        String queryy = "select u.id, u.username, u.name, p.name, p.id from USER u " +
+                "inner join USER_PROJECT up on u.id = up.user_id inner join PROJECT p " +
+                "on p.id = up.project_id where p.id = ?"
+        conn.queryWithParams(queryy, new JsonArray().add(projectId), { query ->
+            if (query.failed()) {
+                println query.cause()
+                sendError(500, response)
+            } else {
+                if (query.result().getNumRows() > 0) {
+                    String json = query.result().results.toString()
+                    println json
+                    JsonArray array = new JsonArray()
+                    ArrayList<UserProjectBO> userList = []
+                    query.result().results.each {
+                        UserProjectBO bo = new UserProjectBO(it)
+                        userList.add(bo)
+                    }
+                    println array
+                    userList.each {
+                        println it.userName
+                    }
+                } else println 'no records found'
+            }
+        })
+    }
+
+    void fetchTaskListForProject(RoutingContext ctx, Integer projectId) {
+
+        println("---------- Testing called---------")
+        SQLConnection conn = ctx.get("conn")
+        String queryy = "select "
+        conn.queryWithParams(queryy, new JsonArray().add(projectId), { query ->
+            if (query.failed()) {
+                println query.cause()
+                sendError(500, response)
+            } else {
+                if (query.result().getNumRows() > 0) {
+                    String json = query.result().results.toString()
+                    println json
+                    JsonArray array = new JsonArray()
+                    ArrayList<UserProjectBO> userList = []
+                    query.result().results.each {
+                        UserProjectBO bo = new UserProjectBO(it)
+                        userList.add(bo)
+                    }
+                    println array
+                    userList.each {
+                        println it.userName
+                    }
+                } else println 'no records found'
+            }
+        })
+    }
+
 }

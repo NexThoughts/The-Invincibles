@@ -9,4 +9,5 @@ class SqlUtil {
     static String queryUserListWithRole() {
         "select username, password, designation, u.id as id, isActive, canAssign, r.name as role from USER u inner join USER_ROLE ur on ur.user_id = u.id inner join ROLE r on r.id = ur.role_id "
     }
+
 }
