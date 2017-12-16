@@ -57,6 +57,7 @@ class BasicCrud extends AbstractVerticle {
         router.post("/loginAuth").handler(this.&loginAuth)
         router.get("/test").handler(this.&test)
         router.get("/projects").handler(this.&fetchProjectList)
+//        router.get("/projects/create").handler(this.&)
         vertx.createHttpServer().requestHandler(router.&accept).listen(8085)
     }
 
@@ -210,18 +211,56 @@ class BasicCrud extends AbstractVerticle {
 
     void createUser(RoutingContext context) {
         SQLConnection conn = context.get("conn")
-        conn.updateWithParams("INSERT INTO user (name, username, address) VALUES (?, ?, ?)",
-                new JsonArray()
-                        .add(context.request().getFormAttribute("name"))
-                        .add(context.request().getFormAttribute("username"))
-                        .add(context.request().getFormAttribute("address")),
-                { query ->
-                    if (query.failed()) {
-                        sendError(500, response)
-                    } else {
-                        context.response().end("Record Inserted")
+        HttpServerResponse response = context.response()
+        String confirmPassword = context.request().getFormAttribute("confirmPassword")
+        UserBO userBO = new UserBO()
+        userBO.username = context.request().getFormAttribute("username")
+        userBO.password = context.request().getFormAttribute("password")
+        userBO.name = context.request().getFormAttribute("name")
+        if (!(userBO.password)) {
+            engine.render(context, "templates/user/signup.ftl", { res ->
+                response.putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end("Please Enter Password")
+            })
+        } else if (!(userBO.username)) {
+            engine.render(context, "templates/user/signup.ftl", { res ->
+                response.putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end("Please Enter UserName")
+            })
+        } else if (!(userBO.name)) {
+            engine.render(context, "templates/user/signup.ftl", { res ->
+                response.putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end("Please Enter Name")
+            })
+        } else if (userBO.username) {
+            String queryStr = "SELECT * FROM USER where username = ?"
+            conn.queryWithParams(queryStr, new JsonArray().add(userBO.username), { query ->
+                if (query.failed()) {
+                    println query.cause()
+                    engine.render(context, "templates/user/signup.ftl", { res ->
+                        response.putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end("Something went wrong")
+                    })
+                } else {
+                    if (query.result().getNumRows() == 1) {
+                        engine.render(context, "templates/user/signup.ftl", { res ->
+                            response.putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end("USER already Exists")
+                        })
                     }
+                }
+            })
+        } else if (confirmPassword) {
+            engine.render(context, "templates/user/signup.ftl", { res ->
+                response.putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end("Please Enter Confirm Password")
+            })
+        } else if (userBO.password && confirmPassword && !(userBO.password?.equals(confirmPassword))) {
+            engine.render(context, "templates/user/signup.ftl", { res ->
+                response.putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end("Password and confirm Password should be match")
+            })
+        } else {
+            userBO.role = "admin"
+            if (createUser(userBO)) {
+                engine.render(context, "templates/dashProfile.ftl", { res ->
+                    response.putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end()
                 })
+            }
+        }
     }
 
     void trigerNowMail() {
@@ -262,7 +301,6 @@ class BasicCrud extends AbstractVerticle {
     void fetchProjectList(RoutingContext ctx) {
 
         println("---------- Query called---------")
-        SQLConnection conn = ctx.get("conn")
         String queryy = "select p.id, name, dateCreated, createdBy from PROJECT p "
         conn.queryWithParams(queryy, new JsonArray(), { query ->
             if (query.failed()) {
@@ -282,6 +320,12 @@ class BasicCrud extends AbstractVerticle {
                     projectList.each {
                         println it.name
                     }
+
+                    ctx.put('projects', generateProjectsTable(projectList))
+                    engine.render(ctx, "templates/projects.ftl", { res ->
+                        ctx.response().putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end(res.result())
+                    })
+
                 } else println 'no records found'
             }
         })
@@ -345,6 +389,26 @@ class BasicCrud extends AbstractVerticle {
             }
         })
     }
+
+    void getProjects(RoutingContext ctx) {
+
+    }
+
+    String generateProjectsTable(List<ProjectBO> projects) {
+        println "projects - " + projects*.name
+        if (!projects) {
+            return ''
+        }
+        StringJoiner joiner = new StringJoiner('<br>')
+        joiner.add('<h2>Select Project</h2>')
+
+        projects*.name.each { name ->
+            joiner.add("<a href='' class='btn btn-primary'>${name}</a>")
+        }
+        println(joiner.toString())
+        return joiner.toString()
+    }
+
 
     void fetchLabelListForTask(RoutingContext ctx, Integer taskId) {
 
@@ -474,7 +538,6 @@ class BasicCrud extends AbstractVerticle {
                     }
                 })
     }
-
     void bootStrap() {
         createRoles()
         createUsers()
@@ -493,7 +556,7 @@ class BasicCrud extends AbstractVerticle {
                     3.times {
                         ProjectBO projectBO = new ProjectBO()
                         projectBO.name = "Project${it}"
-                        projectBO.createdBy = "${it +1}"
+                        projectBO.createdBy = "${it + 1}"
                         projectBO.dateCreated = AppUtil.formattedDate(new Date(), AppUtil.mySqlDateFormat)
                         createProject(projectBO)
                     }
@@ -660,4 +723,5 @@ class BasicCrud extends AbstractVerticle {
         """ </tbody>
 </table>"""
     }
+
 }

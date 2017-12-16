@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <title>TODO</title>
 
+    <script src='http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js'></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.3.0/jquery-confirm.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.3.0/jquery-confirm.min.js"></script>
+    <script src='https://cdn.jsdelivr.net/npm/jquery-validation@1.17.0/dist/jquery.validate.min.js'></script>
+
     <!--<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/meyer-reset/2.0/reset.min.css">-->
 
     <link rel='stylesheet prefetch'
@@ -181,10 +186,11 @@
 <div class="module form-module">
     <div class="form">
         <h2>Create an account</h2>
-        <form action="signup" method="post">
-            <input type="text" name="username" placeholder="Username"/>
-            <input type="password" name="password" placeholder="Password"/>
-            <input type="tel" placeholder="Phone Number"/>
+        <form id="signupForm" action="signup" method="post">
+            <input type="text" id="name" name="name" placeholder="Name"/>
+            <input type="text" id='username' name="username" placeholder="Username"/>
+            <input type="password" id="password" name="password" placeholder="Password"/>
+            <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirm Password"/>
             <button>Register</button>
         </form>
     </div>
@@ -193,9 +199,8 @@
     <div class="cta"><a href="login">Login</a>
     </div>
 </div>
-<script src='http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js'></script>
 <script type="text/javascript">
-    $( document ).ready(function() {
+    $(document).ready(function () {
         $('.form').animate({
             height: "toggle",
             'padding-top': 'toggle',
@@ -203,6 +208,33 @@
             opacity: "toggle"
         }, "slow");
     });
+
+    $("#signupForm").validate({
+        submitHandler: function (form) {
+            var name = $('#name').val();
+            var username = $('#username').val();
+            var password = $('#password').val();
+            var confirm_password = $('#confirm_password').val();
+
+            if(!name){
+                alert('Enter name');
+                return;
+            }
+            if(!username){
+                alert('Enter username');
+            }
+            if(!password){
+                alert('Enter Password');
+                return;
+            }
+            if(confirm_password !== password){
+                alert('Passwords do not match');
+                return;
+            }
+            form.submit();
+        }
+    });
+
 </script>
 </body>
 </html>
