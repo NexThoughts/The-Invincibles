@@ -4,6 +4,7 @@ import com.bo.ProjectBO
 import com.bo.TaskBO
 import com.bo.UserBO
 import com.bo.UserProjectBO
+import com.util.AppUtil
 import com.util.SqlUtil
 import io.vertx.core.AbstractVerticle
 import io.vertx.core.http.HttpHeaders
@@ -426,8 +427,10 @@ class BasicCrud extends AbstractVerticle {
                         .add(projectBO.dateCreated),
                 { query2 ->
                     if (query2.failed()) {
+                        println query2.cause()
                         return false
                     } else {
+                        println 'project created successfully'
                         return true
                     }
                 })
@@ -483,11 +486,11 @@ class BasicCrud extends AbstractVerticle {
                 sendError(500, response)
             } else {
                 if (query.result().getNumRows() == 0) {
-                    3.each {
+                    3.times {
                         ProjectBO projectBO = new ProjectBO()
                         projectBO.name = "Project${it}"
-                        projectBO.createdBy = "${it}"
-                        projectBO.dateCreated = new Date()
+                        projectBO.createdBy = "${it +1}"
+                        projectBO.dateCreated = AppUtil.formattedDate(new Date(), AppUtil.mySqlDateFormat)
                         createProject(projectBO)
                     }
                 }
