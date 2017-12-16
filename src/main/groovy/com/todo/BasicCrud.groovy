@@ -447,6 +447,7 @@ class BasicCrud extends AbstractVerticle {
     // pass -> name, username, password, designation, isActive, canAssign, role
     boolean createNewUser(UserBO userBO) {
         String queryy = "select * from USER where username = '${userBO.username}'"
+        JDBCAuth auth = JDBCAuth.create(vertx, client);
         conn.queryWithParams(queryy, new JsonArray(), { query ->
             if (query.failed()) {
                 println query.cause()
@@ -455,14 +456,18 @@ class BasicCrud extends AbstractVerticle {
                 if (query.result().getNumRows() > 0) {
                     'USER already exists'
                 } else {
-                    conn.updateWithParams("INSERT INTO USER (name, username, password, designation, isActive, canAssign) VALUES (?, ?, ?, ?, ?, ?)",
+                    auth.setNonces(new JsonArray().add("random_hash_1").add("random_hash_1"));
+                    String salt = auth.generateSalt();
+                    String hash = auth.computeHash(userBO.password, salt);
+                    conn.updateWithParams("INSERT INTO USER (name, username, password, designation, isActive, canAssign, password_salt) VALUES (?, ?, ?, ?, ?, ?, ?)",
                             new JsonArray()
                                     .add(userBO.name)
                                     .add(userBO.username)
-                                    .add(userBO.password)
+                                    .add(hash)
                                     .add(userBO.designation ?: '')
                                     .add(userBO.isActive ?: true)
-                                    .add(userBO.canAssign ?: true),
+                                    .add(userBO.canAssign ?: true)
+                                    .add(salt),
                             { query2 ->
                                 if (query2.failed()) {
                                     return false
