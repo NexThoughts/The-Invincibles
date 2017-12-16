@@ -11,10 +11,10 @@ class StartTimer {
     void executeTimer() {
         Vertx vertx = Vertx.vertx()
         vertx.setTimer(1000, { id ->
-            SendEmail.triggerNow("anubhav@fintechlabs.in", "iiiiiiii", "TESTING HELLO", vertx)
+//            SendEmail.triggerNow("anubhav@fintechlabs.in", "iiiiiiii", "TESTING HELLO", vertx)
         })
         vertx.setPeriodic(1000 * 60 * 60 * 24, { id ->
-            SendEmail.triggerNow("anubhav@fintechlabs.in", "iiiiiiii", "TESTING HELLO", vertx)
+//            SendEmail.triggerNow("anubhav@fintechlabs.in", "iiiiiiii", "TESTING HELLO", vertx)
         })
     }
 }

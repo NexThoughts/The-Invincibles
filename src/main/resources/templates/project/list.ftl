@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>TODO</title>
+    <title>${context.title}</title>
 
+    <!--<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/meyer-reset/2.0/reset.min.css">-->
 
     <link rel='stylesheet prefetch'
           href='https://fonts.googleapis.com/css?family=Roboto:400,100,300,500,700,900|RobotoDraft:400,100,300,500,700,900'>
@@ -19,6 +20,7 @@
             -moz-osx-font-smoothing: grayscale;
         }
 
+        /* Pen Title */
         .pen-title {
             padding: 50px 0;
             text-align: center;
@@ -171,32 +173,34 @@
 <body>
 
 <div class="pen-title">
-    <h1>ToDo App Login</h1>
+    <h1>Project Details</h1>
     <div style="display: none"><span>Pen <i class='fa fa-paint-brush'></i> + <i class='fa fa-code'></i> by <a
             href='http://andytran.me'>Andy Tran</a></span></div>
 </div>
 <!-- Form Module-->
 <div class="module form-module">
+    <div class="table">
+        <table class="table">
+            <thead>
+            <tr>
+                <th>Id</th>
+                <th>Name</th>
+                <th>Date Created</th>
+                <th>Created By</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
 
-    <div class="form" style="padding-top: toggle,
-            padding-bottom: toggle">
-        <h2>Login to your account</h2>
-        <form method="post" action="${context.request().path()}loginAuth">
-            <input type="text" name="username" placeholder="Username"/>
-            <input type="password" name="password" placeholder="Password"/>
-            <button>Login</button>
-        </form>
-    </div>
-    <div class="cta"><a href="forgetPassword">Forgot your password?</a>
-    </div>
-    <div class="cta"><a href="signup">SignUp</a>
-    </div>
+</div>
 </div>
 <script src='http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js'></script>
-<!--<script src='https://codepen.io/andytran/pen/vLmRVp.js'></script>-->
-
 <script type="text/javascript">
-    // Toggle Function
     $(document).ready(function () {
         $('.form').animate({
             height: "toggle",
@@ -206,6 +210,5 @@
         }, "slow");
     });
 </script>
-
 </body>
 </html>

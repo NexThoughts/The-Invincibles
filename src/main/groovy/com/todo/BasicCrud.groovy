@@ -55,6 +55,7 @@ class BasicCrud extends AbstractVerticle {
         router.post("/saveUser").handler(this.&saveUserMeth)
         router.post("/loginAuth").handler(this.&loginAuth)
         router.get("/test").handler(this.&test)
+        router.get("/projects").handler(this.&showProjects)
         vertx.createHttpServer().requestHandler(router.&accept).listen(8085)
     }
 
@@ -72,7 +73,7 @@ class BasicCrud extends AbstractVerticle {
     }
 
     void showForm(RoutingContext ctx) {
-        SendEmail.triggerNow("anubhav@fintechlabs.in", "Test First", "Hello welcome to using vertx", vertx)
+//        SendEmail.triggerNow("anubhav@fintechlabs.in", "Test First", "Hello welcome to using vertx", vertx)
     }
 
     void login(RoutingContext ctx) {
@@ -126,7 +127,8 @@ class BasicCrud extends AbstractVerticle {
 
     void loginAuth(RoutingContext ctx) {
         SQLConnection connection = ctx.get("conn")
-        JsonObject authInfo = new JsonObject().put("username", "${ctx.request().getFormAttribute("emailId")}").put("password", "${ctx.request().getFormAttribute("password")}");
+        String userName = ctx.request().getFormAttribute("username")
+        JsonObject authInfo = new JsonObject().put("username", "${userName}").put("password", "${ctx.request().getFormAttribute("password")}");
         JDBCAuth authProvider = JDBCAuth.create(vertx, client);
         authProvider.authenticate(authInfo, { res ->
             if (res.succeeded()) {
@@ -135,13 +137,13 @@ class BasicCrud extends AbstractVerticle {
 //                router.route().handler(CookieHandler.create());
                 router.route().handler(SessionHandler.create(LocalSessionStore.create(vertx)));
 
-                engine.render(ctx, "templates/successLogin.ftl", { res1 ->
+                engine.render(ctx, "templates/dashProfile.ftl", { res1 ->
                     ctx.response().putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end(res1.result())
                 })
             } else {
                 println("error----${res}-----------")
                 ctx.put("errorMessage", "${res.cause()?.toString()}")
-                ctx.response().putHeader("location", "/").setStatusCode(302).end();
+                ctx.response().putHeader("location", "/").setStatusCode(302).end(res.cause()?.toString());
             }
         });
     }
@@ -170,7 +172,6 @@ class BasicCrud extends AbstractVerticle {
                                 auth.setNonces(new JsonArray().add("random_hash_1").add("random_hash_1"));
                                 String salt = auth.generateSalt();
                                 String hash = auth.computeHash("123456", salt);
-// save to the database
                                 conn.updateWithParams("INSERT INTO USER VALUES (?, ?, ?)", new JsonArray().add(it).add(hash).add(salt), { res1 ->
                                     if (res1.succeeded()) {
                                         // success!
@@ -191,13 +192,6 @@ class BasicCrud extends AbstractVerticle {
 
     void logOut(RoutingContext context) {
         final Session session = context.session()
-        /*
-        session.remove("login");
-        session.remove("userId");
-        String accessToken=session.get("accessToken");
-        if (accessToken != null) {
-            context.vertx().sharedData().getLocalMap("access_tokens").remove(accessToken);
-        }*/
         context.response().putHeader("location", "/").setStatusCode(302).end();
     }
 
@@ -351,7 +345,6 @@ class BasicCrud extends AbstractVerticle {
     }
 
 
-
     void bootStrap() {
         createRoles()
         createUsers()
@@ -365,7 +358,7 @@ class BasicCrud extends AbstractVerticle {
     }
 
     void createRoles() {
-        List<String> roles = ['admin','user']
+        List<String> roles = ['admin', 'user']
         String queryStr = "SELECT * FROM ROLE where name = ?"
 //        JDBCAuth auth = JDBCAuth.create(vertx, client);
         roles.each { role ->
@@ -402,7 +395,7 @@ class BasicCrud extends AbstractVerticle {
             if (query0.failed()) {
                 println query0.cause()
             } else {
-                Integer role_id = query0.result().results.first().getAt(0) as Integer
+                Integer role_id = query0.result().results[0].getAt(0) as Integer
                 usernames.eachWithIndex { username, index ->
                     conn.queryWithParams(queryStr, new JsonArray().add(username), { query ->
                         if (query.failed()) {
@@ -485,5 +478,72 @@ class BasicCrud extends AbstractVerticle {
         })
 
 
+    }
+
+    void showProjects(RoutingContext routingContext) {
+        routingContext.put("title", "Project Details")
+        HttpServerResponse response = routingContext.response()
+        SQLConnection conn = routingContext.get("conn")
+        println(conn.properties)
+        conn.query("SELECT id, name, dateCreated, age, email FROM user", { query ->
+            if (query.failed()) {
+                println query.cause()
+                routingContext.put("error", "No Record Found")
+            } else {
+                JsonArray arr = new JsonArray()
+                query.result().results.forEach(arr.&add)
+                JsonArray array = new JsonArray()
+                query.result().results.each {
+                    JsonObject obj = new JsonObject()
+                    obj.put("id", it[0])
+                    obj.put("firstName", it[1])
+                    obj.put("lastName", it[2])
+                    obj.put("age", it[3])
+                    obj.put("email", it[4])
+                    array.add(obj)
+                }
+                String userTable = generateTable(array)
+
+                engine.render(ctx, "templates/project/list.ftl", { res1 ->
+                    ctx.response().putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end(userTable)
+                })
+            }
+        })
+    }
+
+    static String generateTable(JsonArray array) {
+        String data = getTableHeader()
+        array.each { JsonObject object ->
+            println(object)
+            data += """<tr>
+        <td>${object.getInteger("id")}</td>
+        <td>${object.getString("firstName")}</td>
+        <td>${object.getString("lastName")}</td>
+        <td>${object.getString("email")}</td>
+        <td>${object.getInteger("age")}</td>
+    </tr>"""
+        }
+
+        data += getTableFooter()
+        return data
+    }
+
+    static String getTableHeader() {
+        return """<table border=1>
+    <thead>
+    <tr>
+        <td>ID</td>
+        <td>First Name</td>
+        <td>Last Name</td>
+        <td>Email</td>
+        <td>Age</td>
+    </tr>
+    </thead>
+    <tbody>"""
+    }
+
+    static String getTableFooter() {
+        """ </tbody>
+</table>"""
     }
 }
