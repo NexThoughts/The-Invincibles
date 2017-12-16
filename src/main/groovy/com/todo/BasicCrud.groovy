@@ -53,11 +53,13 @@ class BasicCrud extends AbstractVerticle {
         router.post("/forgetPassword").handler(this.&forgetPassword)
         router.get("/logout").handler(this.&logOut)
         router.get("/users").handler(this.&showUsers)
-        router.get("/mailTrigeer").handler(this.&trigerNowMail)
+//        router.get("/mailTrigeer").handler(this.&trigerNowMail)
         router.post("/saveUser").handler(this.&saveUserMeth)
         router.post("/loginAuth").handler(this.&loginAuth)
-        router.get("/test").handler(this.&test)
+//        router.get("/test").handler(this.&test)
+        router.get("/userslist").handler(this.&fetchUserListWithRole)
         router.get("/projects").handler(this.&fetchProjectList)
+//        router.get("/projects/:projectID").handler(this.&fetchProjectList)
 //        router.get("/projects/create").handler(this.&)
         vertx.createHttpServer().requestHandler(router.&accept).listen(8085)
     }
@@ -124,7 +126,7 @@ class BasicCrud extends AbstractVerticle {
                 })
     }
 
-    void showUsers() {
+    void showUsers(RoutingContext ctx) {
 
     }
 
@@ -287,7 +289,7 @@ class BasicCrud extends AbstractVerticle {
     void fetchUserListWithRole(RoutingContext ctx) {
 
         println("---------- Query called---------")
-        SQLConnection conn = ctx.get("conn")
+//        SQLConnection conn = ctx.get("conn")
         conn.queryWithParams(SqlUtil.queryUserListWithRole(), new JsonArray(), { query ->
             if (query.failed()) {
                 println query.cause()
@@ -306,6 +308,10 @@ class BasicCrud extends AbstractVerticle {
                     userList.each {
                         println it.username
                     }
+                    ctx.put('users', generateUsersTable(userList))
+                    engine.render(ctx, "templates/user/list.ftl", { res ->
+                        ctx.response().putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end(res.result())
+                    })
                 } else println 'no records found'
             }
         })
@@ -334,6 +340,7 @@ class BasicCrud extends AbstractVerticle {
                         println it.name
                     }
 
+//                    ctx.put('userId',)
                     ctx.put('projects', generateProjectsTable(projectList))
                     engine.render(ctx, "templates/projects.ftl", { res ->
                         ctx.response().putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end(res.result())
@@ -412,14 +419,28 @@ class BasicCrud extends AbstractVerticle {
         if (!projects) {
             return ''
         }
-        StringJoiner joiner = new StringJoiner('<br>')
-        joiner.add('<h2>Select Project</h2>')
+        StringJoiner joiner = new StringJoiner('<li>', '<h2>Select Project</h2><ul><li>', '</ul>')
+//        joiner.add('<h2>Select Project</h2>')
+
 
         projects*.name.each { name ->
             joiner.add("<a href='' class='btn btn-primary'>${name}</a>")
         }
         println(joiner.toString())
         return joiner.toString()
+    }
+
+    String generateUsersTable(List<UserBO> users) {
+        if (!users) {
+            return ''
+        }
+        String tableHeader = """<table><thead><tr><th>Name</th><th>Email</th></tr></thead>"""
+        StringBuilder sb = new StringBuilder(tableHeader)
+        users.each { user ->
+            sb.append("<tr><td>${user.name}</td><td>${user.username}</td>")
+        }
+        sb.append('</table>')
+        return sb.toString()
     }
 
 
@@ -559,8 +580,8 @@ class BasicCrud extends AbstractVerticle {
 
     void bootStrap() {
         createRoles()
-        createUsers()
-        createProjects()
+//        createUsers()
+//        createProjects()
     }
 
     void createProjects() {
@@ -598,6 +619,7 @@ class BasicCrud extends AbstractVerticle {
                         println("=============== ${query.result()}")
                         conn.update("INSERT INTO ROLE (name) values('${role}')", { res1 ->
                             if (res1.succeeded()) {
+                                createUsers()
                                 // success!
                                 println("------ created role ===== ${role}")
                             } else {
@@ -634,11 +656,12 @@ class BasicCrud extends AbstractVerticle {
                                 String salt = auth.generateSalt();
                                 String hash = auth.computeHash("123456", salt);
 // save to the database
-                                conn.updateWithParams("INSERT INTO USER (username,password,password_salt,designation,isActive) VALUES (?, ?, ?,?,?)",
-                                        new JsonArray().add(username).add(hash).add(salt).add('Software Developer').add(true),
+                                conn.updateWithParams("INSERT INTO USER (username,password,password_salt,designation,name,isActive) VALUES (?, ?, ?,?,?,?)",
+                                        new JsonArray().add(username).add(hash).add(salt).add('Software Developer').add(username.split('@')[0]).add(true),
                                         { res1 ->
                                             if (res1.succeeded()) {
                                                 // success!
+                                                createProjects()
                                                 println("------ created user ===== ${username}")
                                             } else {
                                                 println("----- error --- " + res1.cause())
