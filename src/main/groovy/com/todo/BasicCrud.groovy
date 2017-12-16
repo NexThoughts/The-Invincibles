@@ -4,7 +4,6 @@ import com.bo.ProjectBO
 import com.bo.TaskBO
 import com.bo.UserBO
 import com.bo.UserProjectBO
-import com.todo.mail.SendEmail
 import com.util.SqlUtil
 import io.vertx.core.AbstractVerticle
 import io.vertx.core.http.HttpHeaders
@@ -419,7 +418,7 @@ class BasicCrud extends AbstractVerticle {
 
     void createProject(ProjectBO projectBO) {
 
-        SQLConnection conn = context.get("conn")
+//        SQLConnection conn = context.get("conn")
         conn.updateWithParams("INSERT INTO PROJECT (name, createdBy, dateCreated) VALUES (?, ?, ?)",
                 new JsonArray()
                         .add(projectBO.name)
