@@ -6,7 +6,7 @@ import io.vertx.ext.mail.MailClient
 class SendEmail {
 
 
-    public static triggerNow(String toMail,String subject,String content,Vertx vertx) {
+    public static void triggerNow(String toMail,String subject,String content,Vertx vertx) {
 
 //        def vertx = Vertx.vertx()
 
