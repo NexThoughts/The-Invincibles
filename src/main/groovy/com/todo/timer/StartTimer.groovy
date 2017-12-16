@@ -25,16 +25,16 @@ class StartTimer extends AbstractVerticle {
         CronObservable.cronspec(scheduler, "0 0/1 * * * ?", "IST")
                 .subscribe({
             println("@@@@@@@@@@@@@Triger@@@@@@@@@@@@@")
-            SendEmail.triggerNow("anubhav@fintechlabs.in", "iiiiiiii", "TESTING HELLO", vertx)
+            SendEmail.triggerNow("anubhav@fintechlabs.in", "iiiiiiii", "TESTING HELLO", null, vertx)
         });
     }
 
     void timeExperssion(Vertx vertx) {
         vertx.setTimer(1000, { id ->
-//            SendEmail.triggerNow("anubhav@fintechlabs.in", "iiiiiiii", "TESTING HELLO", vertx)
+            SendEmail.triggerNow("anubhav@fintechlabs.in", "iiiiiiii", "TESTING HELLO", null, vertx)
         })
         vertx.setPeriodic(1000 * 60 * 60 * 24, { id ->
-//            SendEmail.triggerNow("anubhav@fintechlabs.in", "iiiiiiii", "TESTING HELLO", vertx)
+            SendEmail.triggerNow("anubhav@fintechlabs.in", "iiiiiiii", "TESTING HELLO", null, vertx)
         })
     }
 }

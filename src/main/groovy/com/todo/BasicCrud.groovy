@@ -7,6 +7,7 @@ import com.bo.UserProjectBO
 import com.todo.mail.SendEmail
 import com.util.AppUtil
 import com.util.SqlUtil
+import io.netty.handler.codec.http.HttpResponse
 import io.vertx.core.AbstractVerticle
 import io.vertx.core.http.HttpHeaders
 import io.vertx.core.http.HttpServerResponse
@@ -63,6 +64,7 @@ class BasicCrud extends AbstractVerticle {
         router.get("/member").handler(this.&createMember)
         router.post("/member").handler(this.&saveMember)
         router.get("/dashboard").handler(this.&dashboard)
+        router.get("/deleteUser").handler(this.&deleteUser)
 //        router.get("/projects/create").handler(this.&)
         vertx.createHttpServer().requestHandler(router.&accept).listen(8085)
     }
@@ -265,7 +267,7 @@ class BasicCrud extends AbstractVerticle {
                         userBO.role = "admin"
                         if (createNewUser(userBO)) {
                             println("======= USER CREATED =======")
-                            SendEmail.triggerNow(userBO.username, "Welcome Mail", "Hi ${userBO.name ?: ''},Thanks For Signup with us. ", vertx)
+                            SendEmail.triggerNow(userBO.username, "Welcome Mail", "Hi ${userBO.name ?: ''},Thanks For Signup with us. ", null, vertx)
                             engine.render(context, "templates/dashProfile.ftl", { res ->
                                 response.putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end(res.result())
                             })
@@ -388,6 +390,25 @@ class BasicCrud extends AbstractVerticle {
         })
     }
 
+    void deleteUser(RoutingContext routingContext) {
+        HttpServerResponse response = routingContext.response()
+        conn.queryWithParams("DELETE FROM USER_ROLE where user_id = ?", new JsonArray().add(Integer.parseInt(routingContext.request().getParam("userId"))), { query ->
+            if (query.failed()) {
+                println query.cause()
+                sendError(500, response)
+            } else {
+                conn.queryWithParams("DELETE FROM USER where id = ?", new JsonArray().add(Integer.parseInt(routingContext.request().getParam("userId"))), { query1 ->
+                    if (query.failed()) {
+                        println query.cause()
+                        sendError(500, response)
+                    } else {
+                        fetchUserListWithRole(routingContext)
+                    }
+                })
+            }
+        })
+    }
+
     void fetchProjectList(RoutingContext ctx) {
 
         println("---------- Query called---------")
@@ -505,10 +526,10 @@ class BasicCrud extends AbstractVerticle {
         if (!users) {
             return ''
         }
-        String tableHeader = """<table><thead><tr><th>Name</th><th>Email</th></tr></thead>"""
+        String tableHeader = """<table><thead><tr><th>Name</th><th>Email</th><th>Action</th></tr></thead>"""
         StringBuilder sb = new StringBuilder(tableHeader)
         users.each { user ->
-            sb.append("<tr><td>${user.name}</td><td>${user.username}</td>")
+            sb.append("<tr><td>${user.name}</td><td>${user.username}</td><td><a href='deleteUser?userId=${user.id}' class='btn btn-danger'>DELETE</a></td></tr>")
         }
         sb.append('</table>')
         return sb.toString()
