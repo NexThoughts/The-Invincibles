@@ -120,7 +120,7 @@
             line-height: 1;
         }
 
-        .form-module input {
+        .form-module input,select {
             outline: none;
             display: block;
             width: 100%;
@@ -134,7 +134,7 @@
             transition: 0.3s ease;
         }
 
-        .form-module input:focus {
+        .form-module input:focus,select {
             border: 1px solid #33b5e5;
             color: #333333;
         }
