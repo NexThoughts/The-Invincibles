@@ -173,24 +173,15 @@
 <body>
 
 <div class="pen-title">
-    <h1>Flat Login Form</h1>
+    <h1>ToDo App SignUp</h1>
     <div style="display: none"><span>Pen <i class='fa fa-paint-brush'></i> + <i class='fa fa-code'></i> by <a
             href='http://andytran.me'>Andy Tran</a></span></div>
 </div>
 <!-- Form Module-->
 <div class="module form-module">
-
-    <div class="form">
-        <h2>Login to your account</h2>
-        <form>
-            <input type="text" name="username" placeholder="Username"/>
-            <input type="password" name="password" placeholder="Password"/>
-            <button>Login</button>
-        </form>
-    </div>
     <div class="form">
         <h2>Create an account</h2>
-        <form>
+        <form action="signup" method="post">
             <input type="text" name="username" placeholder="Username"/>
             <input type="password" name="password" placeholder="Password"/>
             <input type="tel" placeholder="Phone Number"/>
@@ -198,20 +189,13 @@
         </form>
     </div>
     <div class="cta"><a href="forgetPassword">Forgot your password?</a>
-        <div class="toggle">
-            <div class=""><a href="#" class="btn">Click Here For SignUp</a></div>
-        </div>
+    </div>
+    <div class="cta"><a href="login">Login</a>
     </div>
 </div>
 <script src='http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js'></script>
-<!--<script src='https://codepen.io/andytran/pen/vLmRVp.js'></script>-->
-
 <script type="text/javascript">
-    // Toggle Function
-    $('.toggle').click(function () {
-        // Switches the Icon
-        $(this).children('i').toggleClass('fa-pencil');
-        // Switches the forms
+    $( document ).ready(function() {
         $('.form').animate({
             height: "toggle",
             'padding-top': 'toggle',
@@ -220,6 +204,5 @@
         }, "slow");
     });
 </script>
-
 </body>
 </html>
