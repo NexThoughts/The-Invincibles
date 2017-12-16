@@ -540,7 +540,7 @@ class BasicCrud extends AbstractVerticle {
             if (query0.failed()) {
                 println query0.cause()
             } else {
-                Integer role_id = query0.result().results.first().getAt(0) as Integer
+                Integer role_id = query0.result().results[0].getAt(0) as Integer
                 usernames.eachWithIndex { username, index ->
                     conn.queryWithParams(queryStr, new JsonArray().add(username), { query ->
                         if (query.failed()) {
