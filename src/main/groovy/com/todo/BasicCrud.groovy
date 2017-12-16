@@ -1,5 +1,7 @@
 package com.todo
 
+import com.bo.UserBO
+import com.util.SqlUtil
 import io.vertx.core.AbstractVerticle
 import io.vertx.core.http.HttpHeaders
 import io.vertx.core.http.HttpServerResponse
@@ -38,6 +40,7 @@ class BasicCrud extends AbstractVerticle {
         router.get("/users").handler(this.&showUsers)
         router.post("/saveUser").handler(this.&saveUserMeth)
         router.post("/loginAuth").handler(this.&loginAuth)
+        router.get("/test").handler(this.&test)
         vertx.createHttpServer().requestHandler(router.&accept).listen(8085)
     }
 
@@ -73,11 +76,11 @@ class BasicCrud extends AbstractVerticle {
     void saveUserMeth(RoutingContext ctx) {
         println("---------- Saving Record ---------")
         SQLConnection conn = ctx.get("conn")
-        conn.updateWithParams("INSERT INTO user (name, username, address) VALUES (?, ?, ?)",
+        conn.updateWithParams("INSERT INTO USER (name, username) VALUES (?, ?)",
                 new JsonArray()
                         .add(ctx.request().getFormAttribute("name"))
-                        .add(ctx.request().getFormAttribute("username"))
-                        .add(ctx.request().getFormAttribute("address")),
+                        .add(ctx.request().getFormAttribute("username")),
+//                        .add(ctx.request().getFormAttribute("address")),
                 { query ->
                     if (query.failed()) {
                         sendError(500, response)
@@ -168,8 +171,44 @@ class BasicCrud extends AbstractVerticle {
         context.response().putHeader("location", "/").setStatusCode(302).end();
     }
 
-
     void sendError(int statusCode, HttpServerResponse response) {
         response.setStatusCode(statusCode).end()
+    }
+
+    void test(RoutingContext ctx) {
+
+        println("---------- Testing called---------")
+        SQLConnection conn = ctx.get("conn")
+        conn.queryWithParams(SqlUtil.queryUserListWithRole(), new JsonArray(), { query ->
+            if (query.failed()) {
+                println query.cause()
+                sendError(500, response)
+            } else {
+                if (query.result().getNumRows() > 0) {
+                    String json = query.result().results.toString()
+                    println json
+                    JsonArray arr = new JsonArray()
+                    query.result().results.forEach(arr.&add)
+                    JsonArray array = new JsonArray()
+                    ArrayList<UserBO> userList = []
+                    query.result().results.each {
+                        JsonObject obj = new JsonObject()
+                        UserBO bo = new UserBO()
+                        obj.put("username", it[0])
+                        obj.put("password", it[1])
+                        obj.put("designation", it[2])
+                        obj.put("id", it[3])
+                        obj.put("isActive", it[4])
+                        obj.put("canAssign", it[5])
+                        obj.put("role", it[6])
+                        userList.add(obj)
+                    }
+                    println array
+                    userList.each {
+                        println it
+                    }
+                } else println 'no records found'
+            }
+        })
     }
 }
