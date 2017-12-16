@@ -398,7 +398,7 @@ class BasicCrud extends AbstractVerticle {
         List<String> admins = ['admin@invincible']
         String queryStr = "SELECT * FROM USER where username = ?"
 
-        conn.queryWithParams('select id from ROLE where name = ?', new JsonArray().add(AppUtil.ROLE_USER), { query0 ->
+        conn.queryWithParams('select id from ROLE where name = ?', new JsonArray().add('user'), { query0 ->
             if (query0.failed()) {
                 println query0.cause()
             } else {
@@ -441,7 +441,7 @@ class BasicCrud extends AbstractVerticle {
             }
         })
 
-        conn.queryWithParams('select id from ROLE where name = ?', new JsonArray().add(AppUtil.ROLE_ADMIN), { query0 ->
+        conn.queryWithParams('select id from ROLE where name = ?', new JsonArray().add('admin'), { query0 ->
             if (query0.failed()) {
                 println query0.cause()
             } else {
