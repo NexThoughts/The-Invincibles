@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>TODO</title>
+    <title>WELCOME</title>
 
 
     <link rel='stylesheet prefetch'
@@ -171,25 +171,16 @@
 <body>
 
 <div class="pen-title">
-    <h1>ToDo App Login</h1>
+    <h1>Hi, </h1>
     <div style="display: none"><span>Pen <i class='fa fa-paint-brush'></i> + <i class='fa fa-code'></i> by <a
             href='http://andytran.me'>Andy Tran</a></span></div>
 </div>
 <!-- Form Module-->
 <div class="module form-module">
 
-    <div class="form" style="padding-top: toggle,
-            padding-bottom: toggle">
-        <h2>Login to your account</h2>
-        <form method="post" action="${context.request().path()}loginAuth">
-            <input type="text" name="username" placeholder="Username"/>
-            <input type="password" name="password" placeholder="Password"/>
-            <button>Login</button>
-        </form>
+    <div class="cta"><a href="projects">Projects</a>
     </div>
-    <div class="cta"><a href="forgetPassword">Forgot your password?</a>
-    </div>
-    <div class="cta"><a href="signup">SignUp</a>
+    <div class="cta"><a href="users">Users </a>
     </div>
 </div>
 <script src='http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js'></script>
