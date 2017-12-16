@@ -1,3 +1,0 @@
-SUCEESSSSSSSSSSSSSSS LOGIN
-
-<a href="logout">LOGOUT</a>
