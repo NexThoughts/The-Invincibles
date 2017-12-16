@@ -1,6 +1,7 @@
 package com.todo
 
 import com.bo.ProjectBO
+import com.bo.TaskBO
 import com.bo.UserBO
 import com.bo.UserProjectBO
 import com.todo.mail.SendEmail
@@ -233,7 +234,7 @@ class BasicCrud extends AbstractVerticle {
 
     void fetchUserListWithRole(RoutingContext ctx) {
 
-        println("---------- Testing called---------")
+        println("---------- Query called---------")
         SQLConnection conn = ctx.get("conn")
         conn.queryWithParams(SqlUtil.queryUserListWithRole(), new JsonArray(), { query ->
             if (query.failed()) {
@@ -260,9 +261,9 @@ class BasicCrud extends AbstractVerticle {
 
     void fetchProjectList(RoutingContext ctx) {
 
-        println("---------- Testing called---------")
+        println("---------- Query called---------")
         SQLConnection conn = ctx.get("conn")
-        String queryy = "select p.id, name, dateCreated, createdBy from project p "
+        String queryy = "select p.id, name, dateCreated, createdBy from PROJECT p "
         conn.queryWithParams(queryy, new JsonArray(), { query ->
             if (query.failed()) {
                 println query.cause()
@@ -288,7 +289,7 @@ class BasicCrud extends AbstractVerticle {
 
     void fetchUserListForProject(RoutingContext ctx, Integer projectId) {
 
-        println("---------- Testing called---------")
+        println("---------- Query called---------")
         SQLConnection conn = ctx.get("conn")
         String queryy = "select u.id, u.username, u.name, p.name, p.id from USER u " +
                 "inner join USER_PROJECT up on u.id = up.user_id inner join PROJECT p " +
@@ -318,9 +319,10 @@ class BasicCrud extends AbstractVerticle {
 
     void fetchTaskListForProject(RoutingContext ctx, Integer projectId) {
 
-        println("---------- Testing called---------")
+        println("---------- Query called---------")
         SQLConnection conn = ctx.get("conn")
-        String queryy = "select "
+        String queryy = "select t.id, t.name, t.description, t.status, isActive, dueDate, p.id from TASK t " +
+                " inner join PROJECT p on p.id = t.project_id where p.id = ?"
         conn.queryWithParams(queryy, new JsonArray().add(projectId), { query ->
             if (query.failed()) {
                 println query.cause()
@@ -330,20 +332,142 @@ class BasicCrud extends AbstractVerticle {
                     String json = query.result().results.toString()
                     println json
                     JsonArray array = new JsonArray()
-                    ArrayList<UserProjectBO> userList = []
+                    ArrayList<TaskBO> taskList = []
                     query.result().results.each {
-                        UserProjectBO bo = new UserProjectBO(it)
-                        userList.add(bo)
+                        TaskBO bo = new TaskBO(it)
+                        taskList.add(bo)
                     }
                     println array
-                    userList.each {
-                        println it.userName
+                    taskList.each {
+                        println it.name
                     }
                 } else println 'no records found'
             }
         })
     }
 
+    void fetchLabelListForTask(RoutingContext ctx, Integer taskId) {
+
+        println("---------- Query called---------")
+        SQLConnection conn = ctx.get("conn")
+        String queryy = "select labelName, task_id, dateCreated, user_id, u.name, u.username, t.name from TASK_LABEL tl inner join TASK t " +
+                "on t.id = tl.task_id inner join USER u on u.id = tl.user_id where t.id = ?"
+        conn.queryWithParams(queryy, new JsonArray().add(taskId), { query ->
+            if (query.failed()) {
+                println query.cause()
+                sendError(500, response)
+            } else {
+                if (query.result().getNumRows() > 0) {
+                    String json = query.result().results.toString()
+                    println json
+                    JsonArray array = new JsonArray()
+                    ArrayList<TaskBO> taskList = []
+                    query.result().results.each {
+                        TaskBO bo = new TaskBO(it)
+                        taskList.add(bo)
+                    }
+                    println array
+                    taskList.each {
+                        println it.name
+                    }
+                } else println 'no records found'
+            }
+        })
+    }
+
+
+    // pass -> name, username, password, designation, isActive, canAssign, role
+    boolean createUser(UserBO userBO) {
+        SQLConnection conn = context.get("conn")
+        String queryy = "select * from USER where username = '${userBO.username}'"
+        conn.queryWithParams(queryy, new JsonArray(), { query ->
+            if (query.failed()) {
+                println query.cause()
+                sendError(500, response)
+            } else {
+                if (query.result().getNumRows() > 0) {
+                    'USER already exists'
+                } else {
+                    conn.updateWithParams("INSERT INTO USER (name, username, password, designation, isActive, canAssign) VALUES (?, ?, ?, ?, ?, ?)",
+                            new JsonArray()
+                                    .add(userBO.name)
+                                    .add(userBO.username)
+                                    .add(userBO.password)
+                                    .add(userBO.designation)
+                                    .add(userBO.isActive)
+                                    .add(userBO.canAssign),
+                            { query2 ->
+                                if (query2.failed()) {
+                                    return false
+                                } else {
+                                    conn.updateWithParams("INSERT INTO USER_ROLE (role_id) VALUES (?)",
+                                            new JsonArray()
+                                                    .add(userBO.role.equals('user') ? 1 : 2),
+                                            { query3 ->
+                                                if (query3.failed()) {
+                                                    return false
+                                                } else {
+                                                    return true
+                                                }
+                                            })
+                                }
+                            })
+                }
+            }
+        })
+    }
+
+    void createProject(ProjectBO projectBO) {
+
+        SQLConnection conn = context.get("conn")
+        conn.updateWithParams("INSERT INTO PROJECT (name, createdBy, dateCreated) VALUES (?, ?, ?)",
+                new JsonArray()
+                        .add(projectBO.name)
+                        .add(projectBO.createdBy)
+                        .add(projectBO.dateCreated),
+                { query2 ->
+                    if (query2.failed()) {
+                        return false
+                    } else {
+                        return true
+                    }
+                })
+    }
+
+    void createTask(TaskBO taskBO) {
+        SQLConnection conn = context.get("conn")
+        String query = "INSERT INTO PROJECT (name, description, status, dueDate, isActive, projectId) VALUES (?, ?, ?, ?, ?, ?)"
+        conn.updateWithParams(query,
+                new JsonArray()
+                        .add(taskBO.name)
+                        .add(taskBO.description)
+                        .add(taskBO.status)
+                        .add(taskBO.dueDate)
+                        .add(taskBO.isActive)
+                        .add(taskBO.projectId),
+                { query2 ->
+                    if (query2.failed()) {
+                        return false
+                    } else {
+                        return true
+                    }
+                })
+    }
+
+    void createLabel(String labelName) {
+        SQLConnection conn = context.get("conn")
+        String query = "INSERT INTO LABEL (name) VALUES (?)"
+        conn.updateWithParams(query,
+                new JsonArray()
+                        .add(labelName),
+                { query2 ->
+                    if (query2.failed()) {
+                        return false
+                    } else {
+                        return true
+                    }
+                })
+    }
 
     void bootStrap() {
         createRoles()
@@ -352,9 +476,24 @@ class BasicCrud extends AbstractVerticle {
     }
 
     void createProjects() {
-        1.times { num ->
-//            conn.updateWithParams('insert into PROJECT values')
-        }
+
+        String queryy = "select * from PROJECT"
+        conn.queryWithParams(queryy, new JsonArray(), { query ->
+            if (query.failed()) {
+                println query.cause()
+                sendError(500, response)
+            } else {
+                if (query.result().getNumRows() == 0) {
+                    3.each {
+                        ProjectBO projectBO = new ProjectBO()
+                        projectBO.name = "Project${it}"
+                        projectBO.createdBy = "${it}"
+                        projectBO.dateCreated = new Date()
+                        createProject(projectBO)
+                    }
+                }
+            }
+        })
     }
 
     void createRoles() {
