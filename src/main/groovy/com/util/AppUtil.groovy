@@ -13,4 +13,12 @@ class AppUtil {
         SimpleDateFormat format = new SimpleDateFormat(dateFormat)
         format.format(date)
     }
+
+    static String getRoleName(int roleId) {
+        roleId == 1 ? 'admin' : 'user'
+    }
+
+    static int getRoleId(String roleName) {
+        roleName == 'admin' ? 1 : 2
+    }
 }

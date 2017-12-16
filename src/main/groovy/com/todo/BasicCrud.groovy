@@ -56,7 +56,7 @@ class BasicCrud extends AbstractVerticle {
         router.post("/saveUser").handler(this.&saveUserMeth)
         router.post("/loginAuth").handler(this.&loginAuth)
         router.get("/test").handler(this.&test)
-        router.get("/projects").handler(this.&showProjects)
+        router.get("/projects").handler(this.&fetchProjectList)
         vertx.createHttpServer().requestHandler(router.&accept).listen(8085)
     }
 
@@ -402,7 +402,7 @@ class BasicCrud extends AbstractVerticle {
                                 } else {
                                     conn.updateWithParams("INSERT INTO USER_ROLE (role_id) VALUES (?)",
                                             new JsonArray()
-                                                    .add(userBO.role.equals('user') ? 1 : 2),
+                                                    .add(AppUtil.getRoleId(userBO.role)),
                                             { query3 ->
                                                 if (query3.failed()) {
                                                     return false
@@ -619,37 +619,6 @@ class BasicCrud extends AbstractVerticle {
         })
 
 
-    }
-
-    void showProjects(RoutingContext routingContext) {
-        routingContext.put("title", "Project Details")
-        HttpServerResponse response = routingContext.response()
-        SQLConnection conn = routingContext.get("conn")
-        println(conn.properties)
-        conn.query("SELECT id, name, dateCreated, age, email FROM user", { query ->
-            if (query.failed()) {
-                println query.cause()
-                routingContext.put("error", "No Record Found")
-            } else {
-                JsonArray arr = new JsonArray()
-                query.result().results.forEach(arr.&add)
-                JsonArray array = new JsonArray()
-                query.result().results.each {
-                    JsonObject obj = new JsonObject()
-                    obj.put("id", it[0])
-                    obj.put("firstName", it[1])
-                    obj.put("lastName", it[2])
-                    obj.put("age", it[3])
-                    obj.put("email", it[4])
-                    array.add(obj)
-                }
-                String userTable = generateTable(array)
-
-                engine.render(ctx, "templates/project/list.ftl", { res1 ->
-                    ctx.response().putHeader(HttpHeaders.CONTENT_TYPE, "text/html").end(userTable)
-                })
-            }
-        })
     }
 
     static String generateTable(JsonArray array) {
