@@ -12,7 +12,7 @@ class UserBO {
     String designation
     String id
     boolean isActive
-    boolean canAssign
+    boolean canAssign = true
     String role
     String name
 
