@@ -14,7 +14,7 @@ class SendEmail {
 
         def config = [:]
         config.hostname = "smtp.gmail.com"
-        config.port = 465
+        config.port = 587
         config.starttls = "REQUIRED"
         config.username = "anubhavgoyalmca@gmail.com"
         config.password = "anubhavnextdefault"
@@ -41,7 +41,7 @@ class SendEmail {
                 println(result.result())
                 println "--------- Sending Email Message Succeeded---------"
             } else {
-                println "--------- Sending Email Message FAILED---------"
+                println "--------- Sending Email Message FAILED---------"+result.cause().printStackTrace()
                 result.cause().printStackTrace()
             }
         })
